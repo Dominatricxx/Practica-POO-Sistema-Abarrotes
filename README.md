@@ -1,1 +1,1 @@
-# Pr-ctica-POO-Sistema-Abarrotes-
+# Practica-POO-Sistema-Abarrotes

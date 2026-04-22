@@ -1,0 +1,2 @@
+class SinStockException(Exception):
+  pass

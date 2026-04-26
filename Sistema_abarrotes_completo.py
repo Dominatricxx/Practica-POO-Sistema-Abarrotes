@@ -2,45 +2,49 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 
 # ============================================================
-# 1. UTILS & EXCEPTIONS (Folder: utils/)
+# 1. EXCEPCIONES (utils/)
 # ============================================================
 class SinStockException(Exception):
-    """Excepción para cuando no hay suficiente producto."""
     pass
 
 # ============================================================
-# 2. PATTERNS - OBSERVER (Folder: patterns/observer/)
+# 2. PATRÓN STRATEGY - DESCUENTOS VARIABLES (patterns/strategy/)
 # ============================================================
-class IStockObserver(ABC):
+class IEstrategiaDescuento(ABC):
     @abstractmethod
-    def actualizar(self, producto): pass
+    def aplicar(self, detalles_carrito):
+        """Recibe la lista de objetos DetalleVenta para analizar productos."""
+        pass
 
-class AlertaBajoStock(IStockObserver):
-    def actualizar(self, producto):
-        # Si el stock baja de 5 unidades/kg, lanza una alerta
-        if producto.stock < 5:
-            print(f"\n🔔 [SISTEMA]: ALERTA DE INVENTARIO - El producto '{producto.nombre}' tiene stock bajo: {producto.stock:.2f}")
+class SinDescuento(IEstrategiaDescuento):
+    def aplicar(self, detalles_carrito):
+        return 0
+
+class DescuentoPorcentajeTotal(IEstrategiaDescuento):
+    def __init__(self, porcentaje):
+        self.porcentaje = porcentaje
+        
+    def aplicar(self, detalles_carrito):
+        subtotal = sum(d.subtotal_detalle for d in detalles_carrito)
+        return subtotal * (self.porcentaje / 100)
+
+class Descuento3x2PorCategoria(IEstrategiaDescuento):
+    """Aplica 3x2: por cada 3 productos de una misma categoría, se descuenta el precio de uno."""
+    def __init__(self, categoria_promo):
+        self.categoria_promo = categoria_promo.lower()
+
+    def aplicar(self, detalles_carrito):
+        descuento_total = 0
+        for d in detalles_carrito:
+            if d.producto.categoria.lower() == self.categoria_promo:
+                # Si es unitario y lleva 3 o más
+                if d.cantidad >= 3:
+                    veces_promo = int(d.cantidad // 3)
+                    descuento_total += veces_promo * d.precio_unitario
+        return descuento_total
 
 # ============================================================
-# 3. PATTERNS - STRATEGY (Folder: patterns/strategy/)
-# ============================================================
-class EstrategiaDescuento(ABC):
-    @abstractmethod
-    def aplicar(self, total): pass
-
-class SinDescuento(EstrategiaDescuento):
-    def aplicar(self, total): return 0
-
-class DescuentoPorcentaje(EstrategiaDescuento):
-    def __init__(self, porcentaje): self.porcentaje = porcentaje
-    def aplicar(self, total): return total * (self.porcentaje / 100)
-
-class DescuentoFijo(EstrategiaDescuento):
-    def __init__(self, monto): self.monto = monto
-    def aplicar(self, total): return self.monto
-
-# ============================================================
-# 4. MODEL (Folder: model/)
+# 3. MODELO (model/)
 # ============================================================
 class Producto(ABC):
     def __init__(self, codigoBarra, nombre, categoria, precioCompra, precioVenta, stock):
@@ -50,19 +54,12 @@ class Producto(ABC):
         self.precioCompra = precioCompra
         self.precioVenta = precioVenta
         self.__stock = stock
-        self._observadores = [] # Para el patrón Observer
 
     @property
     def stock(self): return self.__stock
 
-    def agregar_observador(self, obs): self._observadores.append(obs)
-
-    def notificar(self):
-        for obs in self._observadores: obs.actualizar(self)
-
     def actualizar_stock(self, cantidad):
         self.__stock -= cantidad
-        self.notificar() # Avisa a los observadores tras cada venta
 
     @abstractmethod
     def calcularImpuesto(self): pass
@@ -73,7 +70,7 @@ class Producto(ABC):
 class ProductoUnitario(Producto):
     def calcularImpuesto(self): return self.precioVenta * 0.16
     def vender(self, cantidad):
-        if not isinstance(cantidad, int): raise ValueError("Solo unidades enteras")
+        if not isinstance(cantidad, int): return False
         if cantidad <= self.stock:
             self.actualizar_stock(cantidad)
             return True
@@ -85,25 +82,7 @@ class ProductoGranel(Producto):
         if cantidad <= self.stock:
             self.actualizar_stock(cantidad)
             return True
-        raise SinStockException(f"Sin peso suficiente de {self.nombre}")
-
-class Inventario:
-    _instancia = None
-    def __new__(cls):
-        if cls._instancia is None:
-            cls._instancia = super(Inventario, cls).__new__(cls)
-            cls._instancia.productos = []
-        return cls._instancia
-    
-    def agregar_producto(self, producto): self.productos.append(producto)
-    def buscar_por_codigo(self, codigo):
-        return next((p for p in self.productos if p.codigoBarra == codigo), None)
-
-class Cliente:
-    def __init__(self, nombre, telefono, puntos=0):
-        self.nombre_cliente = nombre
-        self.telefono = telefono
-        self.puntos_acumulados = puntos
+        raise SinStockException(f"Peso insuficiente de {self.nombre}")
 
 class DetalleVenta:
     def __init__(self, producto, cantidad):
@@ -112,14 +91,23 @@ class DetalleVenta:
         self.precio_unitario = producto.precioVenta
         self.subtotal_detalle = self.precio_unitario * cantidad
 
+    def __str__(self):
+        return f"{self.producto.nombre:<12} x{self.cantidad:>4} ${self.subtotal_detalle:>8.2f}"
+
 class Venta:
     def __init__(self, folio, cliente=None):
         self.folio = folio
         self.fecha = datetime.now()
         self.cliente = cliente
         self.carrito = []
-        self.estrategia_descuento = SinDescuento()
-        self.__subtotal, self.__total = 0.0, 0.0
+        self.estrategia_descuento = SinDescuento() # Por defecto
+        self.__subtotal = 0.0
+        self.__total = 0.0
+
+    def set_estrategia(self, estrategia: IEstrategiaDescuento):
+        """El carrito recibe la estrategia sin modificar su código interno."""
+        self.estrategia_descuento = estrategia
+        self._recalcular()
 
     def agregar_producto(self, producto, cantidad):
         if producto.vender(cantidad):
@@ -129,75 +117,45 @@ class Venta:
         return False
 
     def _recalcular(self):
+        # 1. Subtotal base
         self.__subtotal = sum(d.subtotal_detalle for d in self.carrito)
+        # 2. Impuestos
         iva = sum(d.producto.calcularImpuesto() * d.cantidad for d in self.carrito)
-        bruto = self.__subtotal + iva
-        descuento = self.estrategia_descuento.aplicar(bruto)
-        self.__total = bruto - descuento
+        # 3. Aplicar Estrategia de Descuento (Pattern Strategy)
+        monto_descuento = self.estrategia_descuento.aplicar(self.carrito)
+        
+        self.__total = (self.__subtotal + iva) - monto_descuento
 
     def generar_ticket(self):
-        t = f"\n--- ABARROTES DON PEPE ---\nFolio: {self.folio}\nCliente: {self.cliente.nombre_cliente if self.cliente else 'General'}\n"
-        t += "-"*30 + "\n"
-        for d in self.carrito:
-            t += f"{d.producto.nombre:<12} x{d.cantidad:>4} ${d.subtotal_detalle:>8.2f}\n"
-        t += "-"*30 + "\n"
-        t += f"TOTAL FINAL:      ${self.__total:>8.2f}\n"
+        t = f"\n=== TICKET DON PEPE ===\nFolio: {self.folio}\n"
+        t += f"Descuento Aplicado: {type(self.estrategia_descuento).__name__}\n"
+        t += "-"*27 + "\n"
+        for d in self.carrito: t += f"{str(d)}\n"
+        t += "-"*27 + "\n"
+        t += f"TOTAL: ${self.__total:>10.2f}\n"
         return t
 
 # ============================================================
-# 5. PATTERNS - FACTORY (Folder: patterns/factory/)
-# ============================================================
-class ProductoFactory:
-    @staticmethod
-    def crear_producto(tipo, *args):
-        if tipo == "unitario": return ProductoUnitario(*args)
-        if tipo == "granel": return ProductoGranel(*args)
-        raise ValueError("Tipo inválido")
-
-# ============================================================
-# 6. CONTROLLERS (Folder: controller/)
-# ============================================================
-class VentasController:
-    def __init__(self, inventario):
-        self.inventario = inventario
-        self.venta_actual = None
-
-    def iniciar_venta(self, folio, cliente=None):
-        self.venta_actual = Venta(folio, cliente)
-
-    def evento_agregar_producto(self, codigo, cantidad):
-        p = self.inventario.buscar_por_codigo(codigo)
-        if p:
-            try:
-                return self.venta_actual.agregar_producto(p, cantidad)
-            except SinStockException as e: print(f"Error: {e}")
-        return False
-
-    def evento_cobrar(self, estrategia=None):
-        if estrategia: self.venta_actual.estrategia_descuento = estrategia
-        self.venta_actual._recalcular()
-        return self.venta_actual.generar_ticket()
-
-# ============================================================
-# 7. MAIN / PRUEBA
+# 4. PRUEBA DE DESCUENTOS VARIABLES
 # ============================================================
 if __name__ == "__main__":
-    # Setup inicial
-    inv = Inventario()
-    alerta = AlertaBajoStock()
-    
-    # Crear productos usando la Factory
-    p1 = ProductoFactory.crear_producto("unitario", "101", "Atun", "Enlatados", 10, 20, 6) # Casi bajo stock
-    p1.agregar_observador(alerta)
-    inv.agregar_producto(p1)
+    # 1. Crear productos
+    leche = ProductoUnitario("101", "Leche LALA", "Lacteos", 10, 20, 100)
+    jabon = ProductoUnitario("102", "Jabon", "Limpieza", 5, 15, 100)
 
-    # El controlador orquesta la venta
-    ctrl = VentasController(inv)
-    ctrl.iniciar_venta(folio="001")
+    # 2. Iniciar Venta
+    venta = Venta(folio="V-3x2")
     
-    print("Agregando 2 latas...")
-    ctrl.evento_agregar_producto("101", 2) # Esto bajará el stock a 4 y disparará la alerta
+    # 3. Escenario: Cliente compra 3 leches
+    venta.agregar_producto(leche, 3) # Total sin promo: 60 + IVA
+    venta.agregar_producto(jabon, 1)
+
+    # 4. APLICAR ESTRATEGIA 3x2 EN LÁCTEOS
+    # El código de la Venta no cambia, solo le 'inyectamos' la estrategia
+    venta.set_estrategia(Descuento3x2PorCategoria("Lacteos"))
     
-    # Cobrar con descuento de porcentaje (Strategy)
-    ticket = ctrl.evento_cobrar(estrategia=DescuentoPorcentaje(10))
-    print(ticket)
+    print(venta.generar_ticket())
+
+    # 5. CAMBIAR A ESTRATEGIA DE 10% TOTAL
+    venta.set_estrategia(DescuentoPorcentajeTotal(10))
+    print(venta.generar_ticket())

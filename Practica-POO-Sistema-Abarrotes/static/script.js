@@ -2,6 +2,8 @@ let productos = [];
 let ventaActual = null;
 let folioContador = 100;
 let rolActual = null;
+let productoPendiente = null;
+let productosFiltrados = [];
 let contrasenaCorrecta = "admin123";
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -93,40 +95,72 @@ async function cargarProductos() {
     try {
         const response = await fetch('/api/productos');
         productos = await response.json();
-        mostrarProductos();
+        productosFiltrados = [...productos];
+        mostrarProductosFiltrados();
     } catch (error) {
         console.error('Error cargando productos:', error);
         mostrarNotificacion('Error al cargar productos', 'error');
     }
 }
 
-function mostrarProductos() {
+function filtrarProductos() {
+    const categoria = document.getElementById('filtroCategoria').value;
+
+    if (categoria === 'todas') {
+        productosFiltrados = [...productos];
+    } else {
+        productosFiltrados = productos.filter(p => p.categoria === categoria);
+    }
+
+    mostrarProductosFiltrados();
+}
+
+function mostrarProductosFiltrados() {
     const grid = document.getElementById('productosGrid');
-    if (productos.length === 0) {
-        grid.innerHTML = '<div class="no-productos">No hay productos registrados</div>';
+    if (productosFiltrados.length === 0) {
+        grid.innerHTML = '<div class="no-productos">No hay productos en esta categoría</div>';
         return;
     }
 
-    grid.innerHTML = productos.map(producto => `
-        <div class="producto-card">
-            <div class="producto-header">
-                <h3>${escapeHtml(producto.nombre)}</h3>
-                <span class="producto-tipo">${producto.tipo === 'ProductoUnitario' ? 'Unitario' : 'Granel'}</span>
+    const categorias = {};
+    productosFiltrados.forEach(producto => {
+        if (!categorias[producto.categoria]) {
+            categorias[producto.categoria] = [];
+        }
+        categorias[producto.categoria].push(producto);
+    });
+
+    let html = '';
+    for (const categoria in categorias) {
+        html += `<div class="categoria-seccion">
+            <h3 class="categoria-titulo"><i class="fas fa-tag"></i> ${escapeHtml(categoria)}</h3>
+            <div class="productos-grid-inner">`;
+
+        html += categorias[categoria].map(producto => `
+            <div class="producto-card">
+                <div class="producto-header">
+                    <h3>${escapeHtml(producto.nombre)}</h3>
+                    <span class="producto-tipo">${producto.tipo === 'ProductoUnitario' ? 'Unitario' : 'Granel'}</span>
+                </div>
+                <div class="producto-info">
+                    <p><i class="fas fa-barcode"></i> ${escapeHtml(producto.codigoBarra)}</p>
+                    <p><i class="fas fa-tag"></i> ${escapeHtml(producto.categoria)}</p>
+                    <p><i class="fas fa-dollar-sign"></i> $${producto.precioVenta.toFixed(2)}</p>
+                    <p class="stock ${producto.stock < 5 ? 'stock-bajo' : ''}">
+                        <i class="fas fa-cubes"></i> Stock: ${producto.stock}
+                    </p>
+                </div>
+                <button onclick="agregarAlCarrito('${producto.codigoBarra}')" class="btn-agregar-carrito" ${producto.stock <= 0 ? 'disabled' : ''}>
+                    <i class="fas fa-cart-plus"></i> ${producto.stock <= 0 ? 'Sin Stock' : 'Agregar'}
+                </button>
+                ${rolActual === 'empleado' ? `<button onclick="eliminarProducto('${producto.codigoBarra}')" class="btn-eliminar"><i class="fas fa-trash"></i> Eliminar</button>` : ''}
             </div>
-            <div class="producto-info">
-                <p><i class="fas fa-barcode"></i> ${escapeHtml(producto.codigoBarra)}</p>
-                <p><i class="fas fa-tag"></i> ${escapeHtml(producto.categoria)}</p>
-                <p><i class="fas fa-dollar-sign"></i> $${producto.precioVenta.toFixed(2)}</p>
-                <p class="stock ${producto.stock < 5 ? 'stock-bajo' : ''}">
-                    <i class="fas fa-cubes"></i> Stock: ${producto.stock}
-                </p>
-            </div>
-            <button onclick="agregarAlCarrito('${producto.codigoBarra}')" class="btn-agregar-carrito" ${producto.stock <= 0 ? 'disabled' : ''}>
-                <i class="fas fa-cart-plus"></i> ${producto.stock <= 0 ? 'Sin Stock' : 'Agregar'}
-            </button>
-            ${rolActual === 'empleado' ? `<button onclick="eliminarProducto('${producto.codigoBarra}')" class="btn-eliminar" style="margin-top:5px; background:#f56565; color:white; border:none; border-radius:5px; padding:5px; cursor:pointer;"><i class="fas fa-trash"></i> Eliminar</button>` : ''}
-        </div>
-    `).join('');
+        `).join('');
+
+        html += `</div></div>`;
+    }
+
+    grid.innerHTML = html;
 }
 
 async function registrarProducto(event) {
@@ -302,23 +336,50 @@ async function agregarAlCarrito(codigoBarra) {
         return;
     }
 
-    let cantidad;
-    if (producto.tipo === 'ProductoUnitario') {
-        cantidad = prompt(`¿Cuántas unidades de ${producto.nombre} deseas agregar?`, '1');
-    } else {
-        cantidad = prompt(`¿Cuántos kilos/gramos de ${producto.nombre} deseas agregar?`, '1');
-    }
+    productoPendiente = producto;
 
-    if (!cantidad || isNaN(cantidad) || cantidad <= 0) return;
+    const mensaje = producto.tipo === 'ProductoUnitario'
+        ? `¿Cuántas unidades de ${producto.nombre} deseas agregar?`
+        : `¿Cuántos kilos/gramos de ${producto.nombre} deseas agregar?`;
 
-    if (cantidad > producto.stock) {
-        mostrarNotificacion(`Stock insuficiente. Solo hay ${producto.stock} disponibles`, 'error');
+    document.getElementById('mensajeCantidad').textContent = mensaje;
+    document.getElementById('inputCantidad').value = '1';
+    document.getElementById('inputCantidad').step = producto.tipo === 'ProductoUnitario' ? '1' : '0.1';
+    document.getElementById('modalCantidad').style.display = 'block';
+    document.getElementById('inputCantidad').focus();
+}
+
+function cerrarModalCantidad() {
+    document.getElementById('modalCantidad').style.display = 'none';
+    productoPendiente = null;
+}
+
+async function confirmarCantidad() {
+    const cantidad = parseFloat(document.getElementById('inputCantidad').value);
+
+    if (!productoPendiente) {
+        mostrarNotificacion('Error: producto no seleccionado', 'error');
+        cerrarModalCantidad();
         return;
     }
 
+    if (!cantidad || isNaN(cantidad) || cantidad <= 0) {
+        mostrarNotificacion('Ingresa una cantidad válida', 'error');
+        return;
+    }
+
+    if (cantidad > productoPendiente.stock) {
+        mostrarNotificacion(`Stock insuficiente. Solo hay ${productoPendiente.stock} disponibles`, 'error');
+        cerrarModalCantidad();
+        return;
+    }
+
+    const codigoBarra = productoPendiente.codigoBarra;
+    cerrarModalCantidad();
+
     const item = {
         codigoBarra: codigoBarra,
-        cantidad: parseFloat(cantidad)
+        cantidad: cantidad
     };
 
     try {
@@ -340,11 +401,14 @@ async function agregarAlCarrito(codigoBarra) {
             await recalcularTotales();
             actualizarCarrito();
             await cargarProductos();
+            mostrarNotificacion(`${productoPendiente.nombre} agregado al carrito`, 'success');
         }
     } catch (error) {
         console.error('Error agregando al carrito:', error);
         mostrarNotificacion('Error al agregar producto', 'error');
     }
+
+    productoPendiente = null;
 }
 
 async function recalcularTotales() {
@@ -491,17 +555,26 @@ async function finalizarVenta() {
     }
 
     const totalMostrar = ventaActual.total.toFixed(2);
-    const confirmar = confirm(`Total a pagar: $${totalMostrar}\n¿Confirmar venta?`);
-    if (!confirmar) return;
+    document.getElementById('totalConfirmar').textContent = `$${totalMostrar}`;
+    document.getElementById('modalConfirmarCompra').style.display = 'block';
+}
+
+function cerrarModalConfirmarCompra() {
+    document.getElementById('modalConfirmarCompra').style.display = 'none';
+}
+
+async function confirmarCompra() {
+    cerrarModalConfirmarCompra();
 
     try {
         const response = await fetch('/api/ventas/finalizar', {
-            method: 'POST'
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
         });
 
         const result = await response.json();
 
-        if (response.ok) {
+        if (result.success) {
             mostrarTicket(result.ticket);
             mostrarNotificacion(`Venta completada. Puntos ganados: ${result.puntos_ganados}`, 'success');
             await cargarProductos();
@@ -605,6 +678,9 @@ window.onclick = function (event) {
     modales.forEach(modal => {
         if (event.target === modal) {
             modal.style.display = 'none';
+            if (modal.id === 'modalCantidad') {
+                productoPendiente = null;
+            }
         }
     });
 }

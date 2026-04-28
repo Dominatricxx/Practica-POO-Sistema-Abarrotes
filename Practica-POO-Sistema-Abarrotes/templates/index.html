@@ -11,6 +11,7 @@
 </head>
 
 <body>
+
     <div id="menuInicial" class="menu-inicial">
         <div class="menu-card">
             <h2>Selecciona tu rol</h2>
@@ -73,6 +74,18 @@
                             onclick="mostrarModalProducto()">
                             <i class="fas fa-plus"></i> Agregar Producto
                         </button>
+                    </div>
+                    <div class="filtro-categorias" style="margin-bottom: 20px;">
+                        <label style="font-weight: bold; margin-right: 10px;">Categoría:</label>
+                        <select id="filtroCategoria" onchange="filtrarProductos()"
+                            style="padding: 8px; border-radius: 5px; border: 1px solid #ddd;">
+                            <option value="todas">Todas</option>
+                            <option value="Limpieza">Limpieza</option>
+                            <option value="Bebidas">Bebidas</option>
+                            <option value="Lacteos">Lácteos</option>
+                            <option value="Carnes">Carnes</option>
+                            <option value="Verduras">Verduras</option>
+                        </select>
                     </div>
                     <div class="productos-grid" id="productosGrid"></div>
                 </div>
@@ -191,8 +204,47 @@
             <button onclick="cerrarModalTicket()" class="btn-cerrar">Cerrar</button>
         </div>
     </div>
+    <div id="modalCantidad" class="modal">
+        <div class="modal-content" style="max-width: 350px;">
+            <span class="close" onclick="cerrarModalCantidad()">&times;</span>
+            <div class="modal-header">
+                <h2><i class="fas fa-cart-plus"></i> Agregar Producto</h2>
+            </div>
+            <div class="modal-body">
+                <p id="mensajeCantidad" style="margin-bottom: 15px; color: #333;"></p>
+                <input type="number" id="inputCantidad" step="any" placeholder="Cantidad"
+                    style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1em;">
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button onclick="confirmarCantidad()" class="btn-verificar" style="flex: 1;">Confirmar</button>
+                    <button onclick="cerrarModalCantidad()" class="btn-cerrar"
+                        style="flex: 1; background: #a0aec0;">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="modalConfirmarCompra" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-money-bill-wave"></i> Confirmar Compra</h2>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 10px; color: #333;">¿Confirmar la siguiente compra?</p>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin: 15px 0;">
+                    <p style="margin-bottom: 10px;"><strong>Total a pagar:</strong></p>
+                    <p id="totalConfirmar"
+                        style="font-size: 1.8em; font-weight: bold; color: #667eea; text-align: center;">$0.00</p>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button onclick="confirmarCompra()" class="btn-verificar" style="flex: 1;">Confirmar</button>
+                    <button onclick="cerrarModalConfirmarCompra()" class="btn-cerrar"
+                        style="flex: 1; background: #a0aec0;">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="/static/script.js"></script>
+
 </body>
 
 </html>

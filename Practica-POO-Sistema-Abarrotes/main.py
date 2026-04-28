@@ -472,6 +472,9 @@ class VentasController:
         if not self.venta_actual:
             return {'error': 'No hay venta activa'}
         
+        if not self.venta_actual.get('carrito') or len(self.venta_actual['carrito']) == 0:
+            return {'error': 'No hay productos en el carrito'}
+        
         puntos_ganados = 0
         if self.venta_actual['cliente']:
             cliente = self.clientes.get(self.venta_actual['cliente']['telefono'])
@@ -480,64 +483,76 @@ class VentasController:
                 self.venta_actual['cliente'] = cliente.to_dict()
                 self.db.guardar_cliente(cliente)
         
-        self.db.guardar_venta(self.venta_actual, self.venta_actual['carrito'], puntos_ganados)
+        try:
+            self.db.guardar_venta(self.venta_actual, self.venta_actual['carrito'], puntos_ganados)
+        except Exception as e:
+            return {'error': f'Error al guardar en base de datos: {str(e)}'}
         
         ticket = self._generar_ticket(puntos_ganados)
         self.ventas_realizadas.append(self.venta_actual)
-        venta_completada = self.venta_actual
         self.venta_actual = None
         
         return {
             'ticket': ticket,
-            'venta': venta_completada,
+            'venta': self.ventas_realizadas[-1],
             'puntos_ganados': puntos_ganados
         }
 
-def _generar_ticket(self, puntos_ganados=0):
-    ticket_lines = []
-    ticket_lines.append("=" * 48)
-    ticket_lines.append("     ABARROTES DON PEPE")
-    ticket_lines.append("=" * 48)
-    ticket_lines.append(f"Folio: {self.venta_actual['folio']}")
-    ticket_lines.append(f"Fecha: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
-    
-    if self.venta_actual['cliente']:
-        ticket_lines.append(f"Cliente: {self.venta_actual['cliente']['nombre']}")
-    
-    ticket_lines.append("-" * 48)
-    
-    for d in self.venta_actual['carrito']:
-        nombre = d['producto']['nombre'][:20]
-        cantidad = d['cantidad']
-        subtotal = d['subtotal_detalle']
-        ticket_lines.append(f"{nombre:<20} x{cantidad:>3}  ${subtotal:>7.2f}")
-    
-    ticket_lines.append("-" * 48)
-    ticket_lines.append(f"Subtotal: ${self.venta_actual['subtotal']:>8.2f}")
-    ticket_lines.append(f"Impuestos: ${self.venta_actual['impuestos']:>8.2f}")
-    ticket_lines.append(f"Descuento: -${self.venta_actual['descuento']:>8.2f}")
-    ticket_lines.append("=" * 48)
-    ticket_lines.append(f"TOTAL A PAGAR: ${self.venta_actual['total']:>8.2f}")
-    
-    if puntos_ganados > 0:
+    def _generar_ticket(self, puntos_ganados=0):
+        ticket_lines = []
+        ticket_lines.append("=" * 48)
+        ticket_lines.append("     ABARROTES DON PEPE")
+        ticket_lines.append("=" * 48)
+        ticket_lines.append(f"Folio: {self.venta_actual['folio']}")
+        ticket_lines.append(f"Fecha: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+        
+        if self.venta_actual['cliente']:
+            ticket_lines.append(f"Cliente: {self.venta_actual['cliente']['nombre']}")
+        
         ticket_lines.append("-" * 48)
-        ticket_lines.append(f"PUNTOS GANADOS: {puntos_ganados}")
-        ticket_lines.append(f"TOTAL PUNTOS: {self.venta_actual['cliente']['puntos']}")
-    
-    ticket_lines.append("=" * 48)
-    
-    return "\n".join(ticket_lines)
+        
+        for d in self.venta_actual['carrito']:
+            nombre = d['producto']['nombre'][:20]
+            cantidad = d['cantidad']
+            subtotal = d['subtotal_detalle']
+            ticket_lines.append(f"{nombre:<20} x{cantidad:>3}  ${subtotal:>7.2f}")
+        
+        ticket_lines.append("-" * 48)
+        ticket_lines.append(f"Subtotal: ${self.venta_actual['subtotal']:>8.2f}")
+        ticket_lines.append(f"Impuestos: ${self.venta_actual['impuestos']:>8.2f}")
+        ticket_lines.append(f"Descuento: -${self.venta_actual['descuento']:>8.2f}")
+        ticket_lines.append("=" * 48)
+        ticket_lines.append(f"TOTAL A PAGAR: ${self.venta_actual['total']:>8.2f}")
+        
+        if puntos_ganados > 0:
+            ticket_lines.append("-" * 48)
+            ticket_lines.append(f"PUNTOS GANADOS: {puntos_ganados}")
+            ticket_lines.append(f"TOTAL PUNTOS: {self.venta_actual['cliente']['puntos']}")
+        
+        ticket_lines.append("=" * 48)
+        
+        return "\n".join(ticket_lines)
 
 inventario = Inventario()
 ctrl_inventario = InventarioController(inventario)
 ctrl_ventas = VentasController(inventario)
 
 if len(inventario.productos) == 0:
-    ctrl_inventario.registrar_producto("unitario", "101", "Leche", "Lacteos", 10, 20, 50)
-    ctrl_inventario.registrar_producto("unitario", "102", "Pan", "Panaderia", 5, 15, 60)
-    ctrl_inventario.registrar_producto("unitario", "103", "Huevos", "Lacteos", 8, 25, 100)
-    ctrl_inventario.registrar_producto("granel", "201", "Arroz", "Granos", 12, 22, 80)
-    ctrl_inventario.registrar_producto("granel", "202", "Frijol", "Granos", 15, 28, 70)
+    ctrl_inventario.registrar_producto("unitario", "101", "Cloro", "Limpieza", 12, 25, 40)
+    ctrl_inventario.registrar_producto("unitario", "102", "Jabón Liquido", "Limpieza", 8, 18, 35)
+    ctrl_inventario.registrar_producto("unitario", "103", "Trapeador", "Limpieza", 15, 35, 20)
+    ctrl_inventario.registrar_producto("unitario", "201", "Coca Cola", "Bebidas", 10, 22, 60)
+    ctrl_inventario.registrar_producto("unitario", "202", "Jugo de Naranja", "Bebidas", 8, 18, 45)
+    ctrl_inventario.registrar_producto("unitario", "203", "Agua Mineral", "Bebidas", 5, 12, 80)
+    ctrl_inventario.registrar_producto("unitario", "301", "Leche Entera", "Lacteos", 12, 25, 30)
+    ctrl_inventario.registrar_producto("unitario", "302", "Yogurt Fresa", "Lacteos", 6, 15, 40)
+    ctrl_inventario.registrar_producto("unitario", "303", "Queso Oaxaca", "Lacteos", 18, 45, 25)
+    ctrl_inventario.registrar_producto("unitario", "401", "Pechuga de Pollo", "Carnes", 25, 55, 20)
+    ctrl_inventario.registrar_producto("unitario", "402", "Carne Molida", "Carnes", 22, 50, 25)
+    ctrl_inventario.registrar_producto("unitario", "403", "Chuleta de Cerdo", "Carnes", 20, 48, 15)
+    ctrl_inventario.registrar_producto("unitario", "501", "Tomate", "Verduras", 8, 18, 30)
+    ctrl_inventario.registrar_producto("unitario", "502", "Cebolla", "Verduras", 6, 15, 35)
+    ctrl_inventario.registrar_producto("unitario", "503", "Papa", "Verduras", 5, 12, 40)
     ctrl_ventas.registrar_cliente("Ana Lopez", "555-9876", 5)
     ctrl_ventas.registrar_cliente("Edgar Rocha", "664-9866", 0)
 
@@ -602,9 +617,15 @@ async def crear_cliente(cliente: ClienteCreate):
     return {"success": True, "cliente": nuevo}
 
 @app.post("/api/ventas/nueva")
-async def nueva_venta(folio: str, telefono_cliente: Optional[str] = None):
-    venta = ctrl_ventas.nueva_venta(folio, telefono_cliente)
-    return {"success": True, "venta": venta}
+async def nueva_venta(request: Request):
+    try:
+        data = await request.json()
+        folio = data.get("folio")
+        telefono_cliente = data.get("telefono_cliente")
+        venta = ctrl_ventas.nueva_venta(folio, telefono_cliente)
+        return {"success": True, "venta": venta}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 @app.post("/api/ventas/agregar-item")
 async def agregar_item_venta(item: ItemVenta):
@@ -625,7 +646,11 @@ async def finalizar_venta():
     resultado = ctrl_ventas.finalizar_venta()
     if "error" in resultado:
         raise HTTPException(status_code=400, detail=resultado["error"])
-    return resultado
+    return {
+        "success": True,
+        "ticket": resultado["ticket"],
+        "puntos_ganados": resultado["puntos_ganados"]
+    }
 
 @app.get("/api/ventas/actual")
 async def venta_actual():

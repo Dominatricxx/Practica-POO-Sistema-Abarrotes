@@ -32,6 +32,7 @@ class ProductoCreate(BaseModel):
     precioCompra: float
     precioVenta: float
     stock: float
+    imagen_url: Optional[str] = ""
 
 class ItemVenta(BaseModel):
     codigoBarra: str
@@ -104,7 +105,8 @@ class DatabaseManager:
                 categoria TEXT NOT NULL,
                 precioCompra REAL NOT NULL,
                 precioVenta REAL NOT NULL,
-                stock REAL NOT NULL
+                stock REAL NOT NULL,
+                imagen_url TEXT DEFAULT 'default.jpg
             )
         ''')
         
@@ -147,23 +149,74 @@ class DatabaseManager:
         
         conn.commit()
         conn.close()
+    def obtener_ventas_por_periodo(self, fecha_inicio):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT v.id, v.folio, v.fecha, v.total, v.descuento, v.puntos_ganados,
+                   c.nombre as cliente_nombre
+            FROM ventas v
+            LEFT JOIN clientes c ON v.telefono_cliente = c.telefono
+            WHERE v.fecha >= ?
+            ORDER BY v.fecha DESC
+        ''', (fecha_inicio,))
+        ventas = cursor.fetchall()
+        conn.close()
+        return ventas
+    
+    def obtener_productos_vendidos_por_periodo(self, fecha_inicio):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT vd.codigoBarra, p.nombre, SUM(vd.cantidad) as total_vendido,
+                   SUM(vd.subtotal_detalle) as total_ventas, p.stock as stock_actual,
+                   SUM(vd.cantidad * p.precioCompra) as costo_total
+            FROM ventas_detalle vd
+            JOIN ventas v ON vd.venta_id = v.id
+            JOIN productos p ON vd.codigoBarra = p.codigoBarra
+            WHERE v.fecha >= ?
+            GROUP BY vd.codigoBarra
+            ORDER BY total_vendido DESC
+        ''', (fecha_inicio,))
+        productos = cursor.fetchall()
+        conn.close()
+        return productos
+    
+    def obtener_ganancias_por_periodo(self, fecha_inicio):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT 
+                SUM(vd.subtotal_detalle) as total_ventas,
+                SUM(vd.cantidad * p.precioCompra) as total_costo,
+                SUM(v.total) as total_con_descuento,
+                SUM(v.descuento) as total_descuentos
+            FROM ventas_detalle vd
+            JOIN ventas v ON vd.venta_id = v.id
+            JOIN productos p ON vd.codigoBarra = p.codigoBarra
+            WHERE v.fecha >= ?
+        ''', (fecha_inicio,))
+        resultado = cursor.fetchone()
+        conn.close()
+        return resultado
     
     def guardar_producto(self, producto):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
         cursor.execute('''
             INSERT OR REPLACE INTO productos 
-            (codigoBarra, tipo, nombre, categoria, precioCompra, precioVenta, stock)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
+            (codigoBarra, tipo, nombre, categoria, precioCompra, precioVenta, stock, imagen_url)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ''', (producto.codigoBarra, producto.__class__.__name__, producto.nombre, 
-              producto.categoria, producto.precioCompra, producto.precioVenta, producto.stock))
+            producto.categoria, producto.precioCompra, producto.precioVenta, 
+            producto.stock, producto.imagen_url))
         conn.commit()
         conn.close()
     
     def cargar_productos(self):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
-        cursor.execute('SELECT * FROM productos')
+        cursor.execute('SELECT codigoBarra, tipo, nombre, categoria, precioCompra, precioVenta, stock, imagen_url FROM productos')
         rows = cursor.fetchall()
         conn.close()
         return rows
@@ -239,15 +292,15 @@ class Cliente:
         }
 
 class Producto(ABC):
-    def __init__(self, codigoBarra, nombre, categoria, precioCompra, precioVenta, stock):
+    def __init__(self, codigoBarra, nombre, categoria, precioCompra, precioVenta, stock, imagen_url="default.jpg"):
         self.codigoBarra = codigoBarra
         self.nombre = nombre
         self.categoria = categoria
         self.precioCompra = precioCompra
         self.precioVenta = precioVenta
         self.__stock = stock
+        self.imagen_url = imagen_url if imagen_url else "default.jpg"
         self._observadores = []
-
     @property
     def stock(self): return self.__stock
 
@@ -273,14 +326,15 @@ class Producto(ABC):
     
     def to_dict(self):
         return {
-            'codigoBarra': self.codigoBarra,
-            'nombre': self.nombre,
-            'categoria': self.categoria,
-            'precioCompra': self.precioCompra,
-            'precioVenta': self.precioVenta,
-            'stock': self.stock,
-            'tipo': self.__class__.__name__
-        }
+        'codigoBarra': self.codigoBarra,
+        'nombre': self.nombre,
+        'categoria': self.categoria,
+        'precioCompra': self.precioCompra,
+        'precioVenta': self.precioVenta,
+        'stock': self.stock,
+        'tipo': self.__class__.__name__,
+        'imagen_url': self.imagen_url
+    }
 
 class ProductoUnitario(Producto):
     def calcularImpuesto(self): return self.precioVenta * 0.16
@@ -301,9 +355,13 @@ class ProductoFactory:
     def crear_producto(tipo, *args):
         tipo_lower = tipo.lower()
         if tipo_lower == "unitario" or tipo_lower == "productounitario":
-            return ProductoUnitario(*args)
+            if len(args) == 7:
+                return ProductoUnitario(*args)
+            return ProductoUnitario(*args, "")
         if tipo_lower == "granel" or tipo_lower == "productogranel":
-            return ProductoGranel(*args)
+            if len(args) == 7:
+                return ProductoGranel(*args)
+            return ProductoGranel(*args, "")
         raise ValueError("Tipo inválido")
 
 class Inventario:
@@ -324,8 +382,9 @@ class Inventario:
                 tipo = "unitario"
             elif tipo == "ProductoGranel":
                 tipo = "granel"
+            imagen_url = row[7] if len(row) > 7 and row[7] else "default.jpg"
             producto = ProductoFactory.crear_producto(
-                tipo, row[0], row[2], row[3], row[4], row[5], row[6]
+                tipo, row[0], row[2], row[3], row[4], row[5], row[6], imagen_url
             )
             producto.agregar_observador(AlertaBajoStock())
             self.productos.append(producto)
@@ -352,8 +411,8 @@ class InventarioController:
     def __init__(self, inventario):
         self.inventario = inventario
 
-    def registrar_producto(self, tipo, codigo, nombre, cat, pc, pv, stock):
-        nuevo = ProductoFactory.crear_producto(tipo, codigo, nombre, cat, pc, pv, stock)
+    def registrar_producto(self, tipo, codigo, nombre, cat, pc, pv, stock, imagen_url="default.jpg"):
+        nuevo = ProductoFactory.crear_producto(tipo, codigo, nombre, cat, pc, pv, stock, imagen_url)
         nuevo.agregar_observador(AlertaBajoStock())
         self.inventario.agregar(nuevo)
         return nuevo.to_dict()
@@ -538,21 +597,27 @@ ctrl_inventario = InventarioController(inventario)
 ctrl_ventas = VentasController(inventario)
 
 if len(inventario.productos) == 0:
-    ctrl_inventario.registrar_producto("unitario", "101", "Cloro", "Limpieza", 12, 25, 40)
-    ctrl_inventario.registrar_producto("unitario", "102", "Jabón Liquido", "Limpieza", 8, 18, 35)
-    ctrl_inventario.registrar_producto("unitario", "103", "Trapeador", "Limpieza", 15, 35, 20)
-    ctrl_inventario.registrar_producto("unitario", "201", "Coca Cola", "Bebidas", 10, 22, 60)
-    ctrl_inventario.registrar_producto("unitario", "202", "Jugo de Naranja", "Bebidas", 8, 18, 45)
-    ctrl_inventario.registrar_producto("unitario", "203", "Agua Mineral", "Bebidas", 5, 12, 80)
-    ctrl_inventario.registrar_producto("unitario", "301", "Leche Entera", "Lacteos", 12, 25, 30)
-    ctrl_inventario.registrar_producto("unitario", "302", "Yogurt Fresa", "Lacteos", 6, 15, 40)
-    ctrl_inventario.registrar_producto("unitario", "303", "Queso Oaxaca", "Lacteos", 18, 45, 25)
-    ctrl_inventario.registrar_producto("unitario", "401", "Pechuga de Pollo", "Carnes", 25, 55, 20)
-    ctrl_inventario.registrar_producto("unitario", "402", "Carne Molida", "Carnes", 22, 50, 25)
-    ctrl_inventario.registrar_producto("unitario", "403", "Chuleta de Cerdo", "Carnes", 20, 48, 15)
-    ctrl_inventario.registrar_producto("unitario", "501", "Tomate", "Verduras", 8, 18, 30)
-    ctrl_inventario.registrar_producto("unitario", "502", "Cebolla", "Verduras", 6, 15, 35)
-    ctrl_inventario.registrar_producto("unitario", "503", "Papa", "Verduras", 5, 12, 40)
+    productos_data = [
+        ("101", "Cloro", "Limpieza", "static\images\cloro.png"),
+        ("102", "Jabon Liquido", "Limpieza", "jabon.jpg"),
+        ("103", "Trapeador", "Limpieza", "trapeador.jpg"),
+        ("201", "Coca Cola", "Bebidas", "cocacola.jpg"),
+        ("202", "Jugo de Naranja", "Bebidas", "jugo.jpg"),
+        ("203", "Agua Mineral", "Bebidas", "agua.jpg"),
+        ("301", "Leche Entera", "Lacteos", "leche.jpg"),
+        ("302", "Yogurt Fresa", "Lacteos", "yogurt.jpg"),
+        ("303", "Queso Oaxaca", "Lacteos", "queso.jpg"),
+        ("401", "Pechuga de Pollo", "Carnes", "pollo.jpg"),
+        ("402", "Carne Molida", "Carnes", "carne.jpg"),
+        ("403", "Chuleta de Cerdo", "Carnes", "chuleta.jpg"),
+        ("501", "Tomate", "Verduras", "tomate.jpg"),
+        ("502", "Cebolla", "Verduras", "cebolla.jpg"),
+        ("503", "Papa", "Verduras", "papa.jpg"),
+    ]
+    
+    for codigo, nombre, categoria, imagen_url in productos_data:
+        ctrl_inventario.registrar_producto("unitario", codigo, nombre, categoria, 12, 25, 40, imagen_url)
+    
     ctrl_ventas.registrar_cliente("Ana Lopez", "555-9876", 5)
     ctrl_ventas.registrar_cliente("Edgar Rocha", "664-9866", 0)
 
@@ -584,6 +649,9 @@ async def get_productos():
 @app.post("/api/productos")
 async def crear_producto(producto: ProductoCreate):
     try:
+        if producto.stock < 0:
+            raise HTTPException(status_code=400, detail="El stock no puede ser negativo")
+        
         nuevo = ctrl_inventario.registrar_producto(
             producto.tipo,
             producto.codigoBarra,
@@ -591,7 +659,8 @@ async def crear_producto(producto: ProductoCreate):
             producto.categoria,
             producto.precioCompra,
             producto.precioVenta,
-            producto.stock
+            producto.stock,
+            producto.imagen_url if hasattr(producto, 'imagen_url') else ""
         )
         return {"success": True, "producto": nuevo}
     except Exception as e:
@@ -701,6 +770,167 @@ async def reporte_ventas():
             }
             for row in rows
         ]
+    }
+
+@app.get("/api/reportes/ventas_detalle")
+async def reporte_ventas_detalle(periodo: str = "todas"):
+    db = DatabaseManager()
+    
+    now = datetime.now()
+    
+    if periodo == "dia":
+        fecha_inicio = now.strftime("%Y-%m-%d")
+    elif periodo == "semana":
+        from datetime import timedelta
+        fecha_inicio = (now - timedelta(days=now.weekday())).strftime("%Y-%m-%d")
+    elif periodo == "mes":
+        fecha_inicio = now.strftime("%Y-%m-01")
+    else:
+        fecha_inicio = "2000-01-01"
+    
+    conn = sqlite3.connect(db.db_name)
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT v.id, v.folio, v.fecha, v.total, v.descuento, v.puntos_ganados,
+               c.nombre as cliente_nombre
+        FROM ventas v
+        LEFT JOIN clientes c ON v.telefono_cliente = c.telefono
+        WHERE v.fecha >= ?
+        ORDER BY v.fecha DESC
+    ''', (fecha_inicio,))
+    ventas = cursor.fetchall()
+    
+    cursor.execute('''
+        SELECT vd.codigoBarra, p.nombre, SUM(vd.cantidad) as total_vendido,
+               SUM(vd.subtotal_detalle) as total_ventas, p.stock as stock_actual,
+               SUM(vd.cantidad * p.precioCompra) as costo_total
+        FROM ventas_detalle vd
+        JOIN ventas v ON vd.venta_id = v.id
+        JOIN productos p ON vd.codigoBarra = p.codigoBarra
+        WHERE v.fecha >= ?
+        GROUP BY vd.codigoBarra
+        ORDER BY total_vendido DESC
+    ''', (fecha_inicio,))
+    productos_vendidos = cursor.fetchall()
+    
+    cursor.execute('''
+        SELECT 
+            COALESCE(SUM(vd.subtotal_detalle), 0) as total_ventas,
+            COALESCE(SUM(vd.cantidad * p.precioCompra), 0) as total_costo,
+            COALESCE(SUM(v.total), 0) as total_con_descuento,
+            COALESCE(SUM(v.descuento), 0) as total_descuentos
+        FROM ventas_detalle vd
+        JOIN ventas v ON vd.venta_id = v.id
+        JOIN productos p ON vd.codigoBarra = p.codigoBarra
+        WHERE v.fecha >= ?
+    ''', (fecha_inicio,))
+    ganancias_data = cursor.fetchone()
+    
+    conn.close()
+    
+    total_ventas = ganancias_data[0] if ganancias_data[0] else 0
+    total_costo = ganancias_data[1] if ganancias_data[1] else 0
+    total_con_descuento = ganancias_data[2] if ganancias_data[2] else 0
+    total_descuentos = ganancias_data[3] if ganancias_data[3] else 0
+    ganancia_neta = total_ventas - total_costo
+    ganancia_real = total_con_descuento - total_costo
+    
+    return {
+        "periodo": periodo,
+        "total_ventas_bruto": total_ventas,
+        "total_costo_productos": total_costo,
+        "total_ventas_neto": total_con_descuento,
+        "ganancia_neta": ganancia_neta,
+        "ganancia_real": ganancia_real,
+        "total_descuentos": total_descuentos,
+        "cantidad_ventas": len(ventas),
+        "ventas": [
+            {
+                "id": v[0],
+                "folio": v[1],
+                "fecha": v[2],
+                "total": v[3],
+                "descuento": v[4],
+                "puntos_ganados": v[5],
+                "cliente": v[6] if v[6] else "Público General"
+            }
+            for v in ventas[:50]
+        ],
+        "productos_vendidos": [
+            {
+                "codigoBarra": p[0],
+                "nombre": p[1],
+                "total_vendido": p[2],
+                "total_ventas": p[3],
+                "stock_actual": p[4],
+                "costo_total": p[5],
+                "ganancia": p[3] - p[5]
+            }
+            for p in productos_vendidos
+        ]
+    }
+
+@app.get("/api/reportes/resumen_completo")
+async def reporte_resumen_completo():
+    db = DatabaseManager()
+    conn = sqlite3.connect(db.db_name)
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT COUNT(*) as total_ventas,
+               COALESCE(SUM(total), 0) as ventas_totales,
+               COALESCE(SUM(descuento), 0) as descuentos_totales,
+               COALESCE(SUM(puntos_ganados), 0) as puntos_totales
+        FROM ventas
+    ''')
+    resumen_general = cursor.fetchone()
+    
+    cursor.execute('''
+        SELECT p.codigoBarra, p.nombre, p.stock, p.precioVenta, p.precioCompra,
+               (p.precioVenta - p.precioCompra) as ganancia_por_unidad
+        FROM productos p
+        ORDER BY p.stock ASC
+    ''')
+    inventario_actual = cursor.fetchall()
+    
+    cursor.execute('''
+        SELECT SUM(vd.cantidad) as total_unidades_vendidas,
+               COALESCE(SUM(vd.subtotal_detalle), 0) as ingreso_total,
+               COALESCE(SUM(vd.cantidad * p.precioCompra), 0) as costo_total
+        FROM ventas_detalle vd
+        JOIN productos p ON vd.codigoBarra = p.codigoBarra
+    ''')
+    total_vendido = cursor.fetchone()
+    
+    conn.close()
+    
+    return {
+        "resumen_general": {
+            "total_ventas_realizadas": resumen_general[0],
+            "ingreso_bruto": resumen_general[1],
+            "total_descuentos_aplicados": resumen_general[2],
+            "ingreso_neto": resumen_general[1] - resumen_general[2],
+            "puntos_totales_entregados": resumen_general[3]
+        },
+        "inventario_actual": [
+            {
+                "codigo": i[0],
+                "nombre": i[1],
+                "stock": i[2],
+                "precio_venta": i[3],
+                "precio_compra": i[4],
+                "ganancia_por_unidad": i[5],
+                "valor_inventario": i[2] * i[4]
+            }
+            for i in inventario_actual
+        ],
+        "resumen_ventas": {
+            "unidades_vendidas": total_vendido[0] if total_vendido[0] else 0,
+            "ingreso_total_ventas": total_vendido[1],
+            "costo_total_productos": total_vendido[2],
+            "ganancia_total": total_vendido[1] - total_vendido[2]
+        }
     }
 
 if __name__ == "__main__":

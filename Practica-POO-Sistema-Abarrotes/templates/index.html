@@ -51,7 +51,7 @@
 
     <div id="contenidoPrincipal" style="display: none;">
         <div class="container">
-            <header>
+            <header style="position: relative;">
                 <div class="logo">
                     <i class="fas fa-store"></i>
                     <h1>ABARROTES DON PEPE</h1>
@@ -66,7 +66,7 @@
                 </button>
             </div>
 
-            <div class="main-content">
+            <div id="mainContentCliente" class="main-content">
                 <div class="panel productos-panel">
                     <div class="panel-header">
                         <h2><i class="fas fa-boxes"></i> Productos Disponibles</h2>
@@ -163,6 +163,88 @@
         </div>
     </div>
 
+    <div id="mainContentEmpleado" class="empleado-double-panel" style="display: none;">
+        <div class="panel-gestion-ventas">
+            <div class="panel-header">
+                <h2><i class="fas fa-chart-bar"></i> Gestión de Ventas</h2>
+            </div>
+
+            <div style="margin: 20px 0; display: flex; gap: 10px;">
+                <button onclick="cargarReporteEmpleado('dia')" class="btn-periodo"
+                    style="flex: 1; padding: 12px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                    <i class="fas fa-calendar-day"></i> Hoy
+                </button>
+                <button onclick="cargarReporteEmpleado('semana')" class="btn-periodo"
+                    style="flex: 1; padding: 12px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                    <i class="fas fa-calendar-week"></i> Esta Semana
+                </button>
+                <button onclick="cargarReporteEmpleado('mes')" class="btn-periodo"
+                    style="flex: 1; padding: 12px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                    <i class="fas fa-calendar-alt"></i> Este Mes
+                </button>
+            </div>
+
+            <div id="reporteContenidoEmpleado" class="reportes-scroll">
+                <div style="text-align: center; padding: 40px; color: #999;">
+                    <i class="fas fa-chart-line" style="font-size: 3em; margin-bottom: 15px;"></i>
+                    <p>Cargando reportes...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel-inventario-empleado">
+            <div class="panel-header">
+                <h2><i class="fas fa-boxes"></i> Inventario</h2>
+                <button onclick="mostrarModalAgregarProductoInventario()" class="btn-agregar"
+                    style="padding: 8px 15px;">
+                    <i class="fas fa-plus"></i> Agregar Producto
+                </button>
+            </div>
+
+            <div class="filtros-inventario-empleado">
+                <input type="text" id="filtroInventarioEmpleado" placeholder="Buscar por nombre o código..."
+                    onkeyup="filtrarInventarioEmpleado()">
+                <select id="filtroCategoriaInventarioEmpleado" onchange="filtrarInventarioEmpleado()">
+                    <option value="">Todas las categorías</option>
+                    <option value="Limpieza">Limpieza</option>
+                    <option value="Bebidas">Bebidas</option>
+                    <option value="Lacteos">Lácteos</option>
+                    <option value="Carnes">Carnes</option>
+                    <option value="Verduras">Verduras</option>
+                </select>
+            </div>
+
+            <div class="inventario-scroll">
+                <table class="tabla-inventario-empleado">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Nombre</th>
+                            <th>Categoría</th>
+                            <th>Precio</th>
+                            <th>Stock</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventarioBodyEmpleado">
+                        <tr>
+                            <td colspan="6" style="text-align: center;">Cargando productos...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="reporteContenido" style="margin-top: 20px;">
+        <div style="text-align: center; padding: 40px; color: #999;">
+            <i class="fas fa-chart-line" style="font-size: 3em; margin-bottom: 15px;"></i>
+            <p>Cargando reportes...</p>
+        </div>
+    </div>
+    </div>
+    </div>
+
     <div id="modalProducto" class="modal">
         <div class="modal-content">
             <span class="close" onclick="cerrarModalProducto()">&times;</span>
@@ -175,9 +257,12 @@
                 <input type="text" id="codigoProducto" placeholder="Código de barras" required>
                 <input type="text" id="nombreProducto" placeholder="Nombre" required>
                 <input type="text" id="categoriaProducto" placeholder="Categoría" required>
+                <input type="text" id="imagenProducto" placeholder="Nombre del archivo de imagen (ej: producto.jpg)"
+                    value="default.jpg">
                 <input type="number" id="precioCompraProducto" placeholder="Precio compra" step="0.01" required>
                 <input type="number" id="precioVentaProducto" placeholder="Precio venta" step="0.01" required>
-                <input type="number" id="stockProducto" placeholder="Stock inicial" step="0.01" required>
+                <input type="number" id="stockProducto" placeholder="Stock inicial" step="0.01" min="0"
+                    oninput="if(this.value < 0) this.value = 0" required>
                 <button type="submit">Registrar Producto</button>
             </form>
         </div>
@@ -240,6 +325,60 @@
                         style="flex: 1; background: #a0aec0;">Cancelar</button>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <div id="modalAgregarProductoInventario" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="cerrarModalAgregarProductoInventario()">&times;</span>
+            <h2><i class="fas fa-box"></i> Agregar Producto al Inventario</h2>
+            <form id="formAgregarProductoInventario">
+                <input type="text" id="codigoProductoInventario" placeholder="Código de barras" required>
+                <input type="text" id="nombreProductoInventario" placeholder="Nombre del producto" required>
+                <select id="categoriaProductoInventario" required>
+                    <option value="">Selecciona una categoría</option>
+                    <option value="Limpieza">Limpieza</option>
+                    <option value="Bebidas">Bebidas</option>
+                    <option value="Lacteos">Lácteos</option>
+                    <option value="Carnes">Carnes</option>
+                    <option value="Verduras">Verduras</option>
+                </select>
+                <input type="number" id="precioProductoInventario" placeholder="Precio de venta" step="0.01" required>
+                <input type="number" id="stockProductoInventario" placeholder="Stock inicial" step="0.01" min="0"
+                    required>
+                <select id="tipoProductoInventario" required>
+                    <option value="unitario">Producto Unitario</option>
+                    <option value="granel">Producto a Granel</option>
+                </select>
+                <button type="submit">Agregar Producto</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="modalEditarProductoInventario" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="cerrarModalEditarProductoInventario()">&times;</span>
+            <h2><i class="fas fa-edit"></i> Editar Producto</h2>
+            <form id="formEditarProductoInventario">
+                <input type="hidden" id="editCodigoOriginal">
+                <input type="text" id="editCodigoProducto" placeholder="Código de barras" required>
+                <input type="text" id="editNombreProducto" placeholder="Nombre del producto" required>
+                <select id="editCategoriaProducto" required>
+                    <option value="">Selecciona una categoría</option>
+                    <option value="Limpieza">Limpieza</option>
+                    <option value="Bebidas">Bebidas</option>
+                    <option value="Lacteos">Lácteos</option>
+                    <option value="Carnes">Carnes</option>
+                    <option value="Verduras">Verduras</option>
+                </select>
+                <input type="number" id="editPrecioProducto" placeholder="Precio de venta" step="0.01" required>
+                <input type="number" id="editStockProducto" placeholder="Stock" step="0.01" min="0" required>
+                <select id="editTipoProducto" required>
+                    <option value="unitario">Producto Unitario</option>
+                    <option value="granel">Producto a Granel</option>
+                </select>
+                <button type="submit">Guardar Cambios</button>
+            </form>
         </div>
     </div>
 

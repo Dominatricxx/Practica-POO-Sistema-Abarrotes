@@ -15,7 +15,7 @@ function seleccionarRol(rol) {
     document.getElementById('menuInicial').style.display = 'none';
     document.getElementById('contenidoPrincipal').style.display = 'block';
 
-    const rolText = rol === 'empleado' ? 'Empleado - Modo Administración' : 'Cliente - Modo Compra';
+    const rolText = rol === 'empleado' ? 'Empleado - Modo Administración' : 'Cliente';
     document.getElementById('rolActual').innerHTML = `<i class="fas ${rol === 'empleado' ? 'fa-user-tie' : 'fa-user'}"></i> ${rolText}`;
 
     if (rol === 'empleado') {

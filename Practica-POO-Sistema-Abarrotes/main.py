@@ -106,7 +106,7 @@ class DatabaseManager:
                 precioCompra REAL NOT NULL,
                 precioVenta REAL NOT NULL,
                 stock REAL NOT NULL,
-                imagen_url TEXT DEFAULT 'default.jpg
+                imagen_url TEXT DEFAULT 'default.jpg'
             )
         ''')
         

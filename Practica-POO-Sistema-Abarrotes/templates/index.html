@@ -16,7 +16,7 @@
         <div class="menu-card">
             <h2>Selecciona tu rol</h2>
             <div class="rol-buttons">
-                <button onclick="solicitarContrasena()" class="btn-rol empleado">
+                <button onclick="mostrarLoginEmpleado()" class="btn-rol empleado">
                     <i class="fas fa-user-tie"></i>
                     <span>Empleado</span>
                 </button>
@@ -25,18 +25,62 @@
                     <span>Cliente</span>
                 </button>
             </div>
+            <div class="admin-link" style="margin-top: 20px; text-align: center;">
+                <button onclick="solicitarContrasena()" class="btn-admin"
+                    style="background: none; border: none; color: #ccc; cursor: pointer; font-size: 0.9em;">
+                    <i class="fas fa-user-plus"></i> Registrar nuevo empleado
+                </button>
+            </div>
         </div>
+
+        <div id="modalLoginEmpleado" class="modal">
+            <div class="modal-content password-modal">
+                <span class="close" onclick="cerrarModalLoginEmpleado()">&times;</span>
+                <div class="password-header">
+                    <i class="fas fa-user-tie"></i>
+                    <h2>Acceso Empleado</h2>
+                </div>
+                <p>Ingresa tus credenciales</p>
+                <div class="password-input-container" style="flex-direction: column; gap: 10px;">
+                    <input type="text" id="loginUsername" placeholder="Usuario" autocomplete="off"
+                        style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px;">
+                    <input type="password" id="loginPassword" placeholder="Contraseña" autocomplete="off"
+                        style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px;">
+                    <button onclick="verificarLoginEmpleado()" class="btn-verificar">
+                        <i class="fas fa-arrow-right"></i> Ingresar
+                    </button>
+                </div>
+                <div id="loginError" class="password-error"></div>
+            </div>
+        </div>
+
+        <div id="modalRegistroEmpleado" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="cerrarModalRegistroEmpleado()">&times;</span>
+                <div class="password-header">
+                    <i class="fas fa-user-plus"></i>
+                    <h2>Registrar Nuevo Empleado</h2>
+                </div>
+                <form id="formRegistroEmpleado">
+                    <input type="text" id="regNombre" placeholder="Nombre completo" required>
+                    <input type="text" id="regUsername" placeholder="Usuario" required>
+                    <input type="password" id="regPassword" placeholder="Contraseña" required>
+                    <button type="submit">Registrar Empleado</button>
+                </form>
+            </div>
+        </div>
+
         <div id="modalPassword" class="modal">
             <div class="modal-content password-modal">
                 <span class="close" onclick="cerrarModalPassword()">&times;</span>
                 <div class="password-header">
                     <i class="fas fa-lock"></i>
-                    <h2>Acceso Empleado</h2>
+                    <h2>Acceso Administrador</h2>
                 </div>
-                <p>Ingresa la contraseña para continuar</p>
+                <p>Ingresa la contraseña de administrador</p>
                 <div class="password-input-container">
                     <input type="password" id="passwordInput" placeholder="Contraseña" autocomplete="off">
-                    <button onclick="verificarPassword()" class="btn-verificar">
+                    <button onclick="verificarPasswordAdmin()" class="btn-verificar">
                         <i class="fas fa-arrow-right"></i> Verificar
                     </button>
                 </div>

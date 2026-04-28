@@ -4,7 +4,7 @@ let folioContador = 100;
 let rolActual = null;
 let productoPendiente = null;
 let productosFiltrados = [];
-let contrasenaCorrecta = "admin123";
+let contrasenaAdmin = "";
 
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('formProducto').addEventListener('submit', registrarProducto);
@@ -56,6 +56,237 @@ function solicitarContrasena() {
     document.getElementById('passwordInput').focus();
 }
 
+function mostrarLoginEmpleado() {
+    const modal = document.getElementById('modalLoginEmpleado');
+    modal.style.display = 'block';
+    document.getElementById('loginUsername').value = '';
+    document.getElementById('loginPassword').value = '';
+    document.getElementById('loginError').innerHTML = '';
+}
+
+function cerrarModalLoginEmpleado() {
+    const modal = document.getElementById('modalLoginEmpleado');
+    modal.style.display = 'none';
+}
+
+function mostrarLoginEmpleado() {
+    const modal = document.getElementById('modalLoginEmpleado');
+    modal.style.display = 'block';
+    document.getElementById('loginUsername').value = '';
+    document.getElementById('loginPassword').value = '';
+    document.getElementById('loginError').innerHTML = '';
+}
+
+function cerrarModalLoginEmpleado() {
+    const modal = document.getElementById('modalLoginEmpleado');
+    modal.style.display = 'none';
+}
+
+function verificarLoginEmpleado() {
+    const username = document.getElementById('loginUsername').value;
+    const password = document.getElementById('loginPassword').value;
+
+    if (!username || !password) {
+        document.getElementById('loginError').innerHTML = 'Por favor ingresa usuario y contraseña';
+        return;
+    }
+
+    fetch('/api/empleados/verificar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: username, password: password })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                cerrarModalLoginEmpleado();
+                seleccionarRol('empleado');
+            } else {
+                document.getElementById('loginError').innerHTML = data.message || 'Usuario o contraseña incorrectos';
+                document.getElementById('loginPassword').value = '';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('loginError').innerHTML = 'Error al verificar credenciales';
+        });
+}
+
+function mostrarRegistroEmpleado() {
+    const modal = document.getElementById('modalRegistroEmpleado');
+    modal.style.display = 'block';
+    document.getElementById('formRegistroEmpleado').reset();
+}
+
+function cerrarModalRegistroEmpleado() {
+    const modal = document.getElementById('modalRegistroEmpleado');
+    modal.style.display = 'none';
+}
+
+function verificarPasswordAdmin() {
+    const password = document.getElementById('passwordInput').value;
+    const loadingOverlay = document.getElementById('loadingOverlay');
+
+    if (!password) {
+        document.getElementById('passwordError').innerHTML = 'Por favor ingresa la contraseña';
+        return;
+    }
+
+    loadingOverlay.style.display = 'flex';
+
+    fetch('/api/empleados/verificar-admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: password })
+    })
+        .then(response => response.json())
+        .then(data => {
+            loadingOverlay.style.display = 'none';
+            if (data.success) {
+                cerrarModalPassword();
+                mostrarRegistroEmpleado();
+            } else {
+                document.getElementById('passwordError').innerHTML = 'Contraseña incorrecta. Intenta nuevamente.';
+                document.getElementById('passwordInput').value = '';
+                document.getElementById('passwordInput').focus();
+            }
+        })
+        .catch(error => {
+            loadingOverlay.style.display = 'none';
+            document.getElementById('passwordError').innerHTML = 'Error al verificar contraseña';
+        });
+}
+
+document.getElementById('formRegistroEmpleado').addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    const nombre = document.getElementById('regNombre').value;
+    const username = document.getElementById('regUsername').value;
+    const password = document.getElementById('regPassword').value;
+
+    if (!nombre || !username || !password) {
+        mostrarNotificacion('Completa todos los campos', 'error');
+        return;
+    }
+
+    fetch('/api/empleados/registrar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre: nombre, username: username, password: password })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                mostrarNotificacion('Empleado registrado exitosamente', 'success');
+                cerrarModalRegistroEmpleado();
+            } else {
+                mostrarNotificacion('Error: ' + data.detail, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            mostrarNotificacion('Error al registrar empleado', 'error');
+        });
+});
+
+function verificarLoginEmpleado() {
+    const username = document.getElementById('loginUsername').value;
+    const password = document.getElementById('loginPassword').value;
+
+    if (!username || !password) {
+        document.getElementById('loginError').innerHTML = 'Por favor ingresa usuario y contraseña';
+        return;
+    }
+
+    fetch('/api/empleados/verificar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: username, password: password })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                cerrarModalLoginEmpleado();
+                seleccionarRol('empleado');
+            } else {
+                document.getElementById('loginError').innerHTML = data.message || 'Usuario o contraseña incorrectos';
+                document.getElementById('loginPassword').value = '';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            document.getElementById('loginError').innerHTML = 'Error al verificar credenciales';
+        });
+}
+
+function mostrarRegistroEmpleado() {
+    const modal = document.getElementById('modalRegistroEmpleado');
+    modal.style.display = 'block';
+    document.getElementById('formRegistroEmpleado').reset();
+}
+
+function cerrarModalRegistroEmpleado() {
+    const modal = document.getElementById('modalRegistroEmpleado');
+    modal.style.display = 'none';
+}
+
+document.getElementById('formRegistroEmpleado').addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    const nombre = document.getElementById('regNombre').value;
+    const username = document.getElementById('regUsername').value;
+    const password = document.getElementById('regPassword').value;
+
+    if (!nombre || !username || !password) {
+        mostrarNotificacion('Completa todos los campos', 'error');
+        return;
+    }
+
+    fetch('/api/empleados/registrar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre: nombre, username: username, password: password })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                mostrarNotificacion('Empleado registrado exitosamente', 'success');
+                cerrarModalRegistroEmpleado();
+            } else {
+                mostrarNotificacion('Error: ' + data.detail, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            mostrarNotificacion('Error al registrar empleado', 'error');
+        });
+});
+
+function verificarPasswordAdmin() {
+    const password = document.getElementById('passwordInput').value;
+    const loadingOverlay = document.getElementById('loadingOverlay');
+
+    if (!password) {
+        document.getElementById('passwordError').innerHTML = 'Por favor ingresa la contraseña';
+        return;
+    }
+
+    loadingOverlay.style.display = 'flex';
+
+    setTimeout(() => {
+        loadingOverlay.style.display = 'none';
+
+        if (password === contrasenaAdmin) {
+            cerrarModalPassword();
+            mostrarRegistroEmpleado();
+        } else {
+            document.getElementById('passwordError').innerHTML = 'Contraseña incorrecta. Intenta nuevamente.';
+            document.getElementById('passwordInput').value = '';
+            document.getElementById('passwordInput').focus();
+        }
+    }, 500);
+}
+
 function cerrarModalPassword() {
     const modal = document.getElementById('modalPassword');
     modal.style.display = 'none';
@@ -89,9 +320,13 @@ function verificarPassword() {
 
 document.addEventListener('keypress', function (event) {
     if (event.key === 'Enter') {
+        const modalLogin = document.getElementById('modalLoginEmpleado');
+        if (modalLogin && modalLogin.style.display === 'block') {
+            verificarLoginEmpleado();
+        }
         const modalPassword = document.getElementById('modalPassword');
         if (modalPassword && modalPassword.style.display === 'block') {
-            verificarPassword();
+            verificarPasswordAdmin();
         }
     }
 });

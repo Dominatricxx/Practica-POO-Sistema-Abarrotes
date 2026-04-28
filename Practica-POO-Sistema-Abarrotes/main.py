@@ -9,6 +9,9 @@ from abc import ABC, abstractmethod
 import json
 import os
 import sqlite3
+from dotenv import load_dotenv
+
+load_dotenv()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 print(f"Directorio base: {BASE_DIR}")
@@ -147,8 +150,19 @@ class DatabaseManager:
             )
         ''')
         
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS empleados (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre TEXT NOT NULL,
+                username TEXT UNIQUE NOT NULL,
+                password TEXT NOT NULL,
+                fecha_creacion TEXT NOT NULL
+            )
+        ''')
+        
         conn.commit()
         conn.close()
+    
     def obtener_ventas_por_periodo(self, fecha_inicio):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
@@ -272,6 +286,190 @@ class DatabaseManager:
         conn.commit()
         conn.close()
         return venta_id
+    
+    def guardar_empleado(self, nombre, username, password):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO empleados (nombre, username, password, fecha_creacion)
+            VALUES (?, ?, ?, ?)
+        ''', (nombre, username, password, datetime.now().isoformat()))
+        conn.commit()
+        conn.close()
+        return True
+    
+    def verificar_empleado(self, username, password):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT id, nombre FROM empleados 
+            WHERE username = ? AND password = ?
+        ''', (username, password))
+        resultado = cursor.fetchone()
+        conn.close()
+        return resultado is not None, resultado[1] if resultado else None
+    
+    def listar_empleados(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute('SELECT id, nombre, username, fecha_creacion FROM empleados')
+        empleados = cursor.fetchall()
+        conn.close()
+        return empleados
+
+    def obtener_ventas_por_periodo(self, fecha_inicio):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT v.id, v.folio, v.fecha, v.total, v.descuento, v.puntos_ganados,
+                   c.nombre as cliente_nombre
+            FROM ventas v
+            LEFT JOIN clientes c ON v.telefono_cliente = c.telefono
+            WHERE v.fecha >= ?
+            ORDER BY v.fecha DESC
+        ''', (fecha_inicio,))
+        ventas = cursor.fetchall()
+        conn.close()
+        return ventas
+    
+    def obtener_productos_vendidos_por_periodo(self, fecha_inicio):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT vd.codigoBarra, p.nombre, SUM(vd.cantidad) as total_vendido,
+                   SUM(vd.subtotal_detalle) as total_ventas, p.stock as stock_actual,
+                   SUM(vd.cantidad * p.precioCompra) as costo_total
+            FROM ventas_detalle vd
+            JOIN ventas v ON vd.venta_id = v.id
+            JOIN productos p ON vd.codigoBarra = p.codigoBarra
+            WHERE v.fecha >= ?
+            GROUP BY vd.codigoBarra
+            ORDER BY total_vendido DESC
+        ''', (fecha_inicio,))
+        productos = cursor.fetchall()
+        conn.close()
+        return productos
+    
+    def obtener_ganancias_por_periodo(self, fecha_inicio):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT 
+                SUM(vd.subtotal_detalle) as total_ventas,
+                SUM(vd.cantidad * p.precioCompra) as total_costo,
+                SUM(v.total) as total_con_descuento,
+                SUM(v.descuento) as total_descuentos
+            FROM ventas_detalle vd
+            JOIN ventas v ON vd.venta_id = v.id
+            JOIN productos p ON vd.codigoBarra = p.codigoBarra
+            WHERE v.fecha >= ?
+        ''', (fecha_inicio,))
+        resultado = cursor.fetchone()
+        conn.close()
+        return resultado
+    
+    def guardar_producto(self, producto):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT OR REPLACE INTO productos 
+            (codigoBarra, tipo, nombre, categoria, precioCompra, precioVenta, stock, imagen_url)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (producto.codigoBarra, producto.__class__.__name__, producto.nombre, 
+            producto.categoria, producto.precioCompra, producto.precioVenta, 
+            producto.stock, producto.imagen_url))
+        conn.commit()
+        conn.close()
+    
+    def cargar_productos(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute('SELECT codigoBarra, tipo, nombre, categoria, precioCompra, precioVenta, stock, imagen_url FROM productos')
+        rows = cursor.fetchall()
+        conn.close()
+        return rows
+    
+    def eliminar_producto(self, codigoBarra):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM productos WHERE codigoBarra = ?', (codigoBarra,))
+        conn.commit()
+        conn.close()
+    
+    def guardar_cliente(self, cliente):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT OR REPLACE INTO clientes (telefono, nombre, puntos)
+            VALUES (?, ?, ?)
+        ''', (cliente.telefono, cliente.nombre_cliente, cliente.puntos))
+        conn.commit()
+        conn.close()
+    
+    def cargar_clientes(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM clientes')
+        rows = cursor.fetchall()
+        conn.close()
+        return rows
+    
+    def guardar_venta(self, venta, detalles, puntos_ganados):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            INSERT INTO ventas 
+            (folio, fecha, telefono_cliente, subtotal, impuestos, descuento, total, puntos_ganados)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (venta['folio'], venta['fecha'], 
+              venta['cliente']['telefono'] if venta['cliente'] else None,
+              venta['subtotal'], venta['impuestos'], venta['descuento'], 
+              venta['total'], puntos_ganados))
+        
+        venta_id = cursor.lastrowid
+        
+        for detalle in detalles:
+            cursor.execute('''
+                INSERT INTO ventas_detalle 
+                (venta_id, codigoBarra, cantidad, precio_unitario, subtotal_detalle, impuesto_detalle)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (venta_id, detalle['producto']['codigoBarra'], detalle['cantidad'],
+                  detalle['precio_unitario'], detalle['subtotal_detalle'], detalle['impuesto_detalle']))
+        
+        conn.commit()
+        conn.close()
+        return venta_id
+
+    def guardar_empleado(self, nombre, username, password):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute('''
+        INSERT INTO empleados (nombre, username, password, fecha_creacion)
+        VALUES (?, ?, ?, ?)
+    ''', (nombre, username, password, datetime.now().isoformat()))
+        conn.commit()
+        conn.close()
+        return True
+
+    def verificar_empleado(self, username, password):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT id, nombre FROM empleados 
+            WHERE username = ? AND password = ?
+        ''', (username, password))
+        resultado = cursor.fetchone()
+        conn.close()
+        return resultado is not None, resultado[1] if resultado else None
+
+    def listar_empleados(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute('SELECT id, nombre, username, fecha_creacion FROM empleados')
+        empleados = cursor.fetchall()
+        conn.close()
+        return empleados
 
 class Cliente:
     def __init__(self, nombre, telefono, puntos_iniciales=0):
@@ -596,23 +794,29 @@ inventario = Inventario()
 ctrl_inventario = InventarioController(inventario)
 ctrl_ventas = VentasController(inventario)
 
+db = DatabaseManager()
+empleados = db.listar_empleados()
+if len(empleados) == 0:
+    admin_password = os.getenv('ADMIN_PASSWORD', 'admin123')
+    db.guardar_empleado("Administrador", "admin", admin_password)
+
 if len(inventario.productos) == 0:
     productos_data = [
         ("101", "Cloro", "Limpieza", "static\images\cloro.png"),
-        ("102", "Jabon Liquido", "Limpieza", "jabon.jpg"),
-        ("103", "Trapeador", "Limpieza", "trapeador.jpg"),
-        ("201", "Coca Cola", "Bebidas", "cocacola.jpg"),
-        ("202", "Jugo de Naranja", "Bebidas", "jugo.jpg"),
-        ("203", "Agua Mineral", "Bebidas", "agua.jpg"),
-        ("301", "Leche Entera", "Lacteos", "leche.jpg"),
-        ("302", "Yogurt Fresa", "Lacteos", "yogurt.jpg"),
-        ("303", "Queso Oaxaca", "Lacteos", "queso.jpg"),
-        ("401", "Pechuga de Pollo", "Carnes", "pollo.jpg"),
-        ("402", "Carne Molida", "Carnes", "carne.jpg"),
-        ("403", "Chuleta de Cerdo", "Carnes", "chuleta.jpg"),
-        ("501", "Tomate", "Verduras", "tomate.jpg"),
-        ("502", "Cebolla", "Verduras", "cebolla.jpg"),
-        ("503", "Papa", "Verduras", "papa.jpg"),
+        ("102", "Jabon Liquido", "Limpieza", "static\images\jabon.jpg"),
+        ("103", "Trapeador", "Limpieza", "static\images\trapeador.jpg"),
+        ("201", "Coca Cola", "Bebidas", "static\images\cocacola.jpg"),
+        ("202", "Jugo de Naranja", "Bebidas", "static\images\jugo.jpg"),
+        ("203", "Agua Mineral", "Bebidas", "static\images\agua.jpg"),
+        ("301", "Leche Entera", "Lacteos", "static\images\leche.png"),
+        ("302", "Yogurt Fresa", "Lacteos", "static\images\yogurt.jpg"),
+        ("303", "Queso Oaxaca", "Lacteos", "static\images\queso.jpg"),
+        ("401", "Pechuga de Pollo", "Carnes", "static\images\pollo.jpg"),
+        ("402", "Carne Molida", "Carnes", "static\images\carne.jpg"),
+        ("403", "Chuleta de Cerdo", "Carnes", "static\images\chuleta.jpg"),
+        ("501", "Tomate", "Verduras", "static\images\tomate.jpg"),
+        ("502", "Cebolla", "Verduras", "static\images\cebolla.jpg"),
+        ("503", "Papa", "Verduras", "static\images\papa.jpg"),
     ]
     
     for codigo, nombre, categoria, imagen_url in productos_data:
@@ -932,6 +1136,101 @@ async def reporte_resumen_completo():
             "ganancia_total": total_vendido[1] - total_vendido[2]
         }
     }
+
+@app.post("/api/empleados/registrar")
+async def registrar_empleado(request: Request):
+    try:
+        data = await request.json()
+        nombre = data.get("nombre")
+        username = data.get("username")
+        password = data.get("password")
+        
+        if not nombre or not username or not password:
+            raise HTTPException(status_code=400, detail="Faltan campos requeridos")
+        
+        db = DatabaseManager()
+        db.guardar_empleado(nombre, username, password)
+        return {"success": True, "message": "Empleado registrado exitosamente"}
+    except Exception as e:
+        if "UNIQUE constraint failed" in str(e):
+            raise HTTPException(status_code=400, detail="El nombre de usuario ya existe")
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/api/empleados/verificar")
+async def verificar_empleado(request: Request):
+    try:
+        data = await request.json()
+        username = data.get("username")
+        password = data.get("password")
+        
+        db = DatabaseManager()
+        valido, nombre = db.verificar_empleado(username, password)
+        
+        if valido:
+            return {"success": True, "nombre": nombre}
+        else:
+            return {"success": False, "message": "Usuario o contraseña incorrectos"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/api/empleados/listar")
+async def listar_empleados():
+    db = DatabaseManager()
+    empleados = db.listar_empleados()
+    return [
+        {
+            "id": e[0],
+            "nombre": e[1],
+            "username": e[2],
+            "fecha_creacion": e[3]
+        }
+        for e in empleados
+    ]
+
+@app.post("/api/empleados/verificar")
+async def verificar_empleado(request: Request):
+    try:
+        data = await request.json()
+        username = data.get("username")
+        password = data.get("password")
+        
+        db = DatabaseManager()
+        valido, nombre = db.verificar_empleado(username, password)
+        
+        if valido:
+            return {"success": True, "nombre": nombre}
+        else:
+            return {"success": False, "message": "Usuario o contraseña incorrectos"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/api/empleados/listar")
+async def listar_empleados():
+    db = DatabaseManager()
+    empleados = db.listar_empleados()
+    return [
+        {
+            "id": e[0],
+            "nombre": e[1],
+            "username": e[2],
+            "fecha_creacion": e[3]
+        }
+        for e in empleados
+    ]
+
+@app.post("/api/empleados/verificar-admin")
+async def verificar_admin(request: Request):
+    try:
+        data = await request.json()
+        password = data.get("password")
+        admin_password = os.getenv('ADMIN_PASSWORD', 'admin123')
+        
+        if password == admin_password:
+            return {"success": True}
+        else:
+            return {"success": False, "message": "Contraseña incorrecta"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn

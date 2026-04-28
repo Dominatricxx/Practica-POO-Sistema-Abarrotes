@@ -8,6 +8,7 @@ from datetime import datetime
 from abc import ABC, abstractmethod
 import json
 import os
+import sqlite3
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 print(f"Directorio base: {BASE_DIR}")
@@ -21,6 +22,7 @@ templates_dir = os.path.join(BASE_DIR, "templates")
 
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 templates = Jinja2Templates(directory=templates_dir)
+
 
 class ProductoCreate(BaseModel):
     tipo: str
@@ -85,6 +87,139 @@ class Descuento3x2PorCategoria(IEstrategiaDescuento):
                 desc += veces * d['precio_unitario']
         return desc
 
+class DatabaseManager:
+    def __init__(self, db_name="abarrotes.db"):
+        self.db_name = db_name
+        self.init_database()
+    
+    def init_database(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS productos (
+                codigoBarra TEXT PRIMARY KEY,
+                tipo TEXT NOT NULL,
+                nombre TEXT NOT NULL,
+                categoria TEXT NOT NULL,
+                precioCompra REAL NOT NULL,
+                precioVenta REAL NOT NULL,
+                stock REAL NOT NULL
+            )
+        ''')
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS clientes (
+                telefono TEXT PRIMARY KEY,
+                nombre TEXT NOT NULL,
+                puntos INTEGER DEFAULT 0
+            )
+        ''')
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS ventas (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                folio TEXT NOT NULL,
+                fecha TEXT NOT NULL,
+                telefono_cliente TEXT,
+                subtotal REAL NOT NULL,
+                impuestos REAL NOT NULL,
+                descuento REAL NOT NULL,
+                total REAL NOT NULL,
+                puntos_ganados INTEGER DEFAULT 0,
+                FOREIGN KEY (telefono_cliente) REFERENCES clientes (telefono)
+            )
+        ''')
+        
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS ventas_detalle (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                venta_id INTEGER NOT NULL,
+                codigoBarra TEXT NOT NULL,
+                cantidad REAL NOT NULL,
+                precio_unitario REAL NOT NULL,
+                subtotal_detalle REAL NOT NULL,
+                impuesto_detalle REAL NOT NULL,
+                FOREIGN KEY (venta_id) REFERENCES ventas (id),
+                FOREIGN KEY (codigoBarra) REFERENCES productos (codigoBarra)
+            )
+        ''')
+        
+        conn.commit()
+        conn.close()
+    
+    def guardar_producto(self, producto):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT OR REPLACE INTO productos 
+            (codigoBarra, tipo, nombre, categoria, precioCompra, precioVenta, stock)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (producto.codigoBarra, producto.__class__.__name__, producto.nombre, 
+              producto.categoria, producto.precioCompra, producto.precioVenta, producto.stock))
+        conn.commit()
+        conn.close()
+    
+    def cargar_productos(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM productos')
+        rows = cursor.fetchall()
+        conn.close()
+        return rows
+    
+    def eliminar_producto(self, codigoBarra):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM productos WHERE codigoBarra = ?', (codigoBarra,))
+        conn.commit()
+        conn.close()
+    
+    def guardar_cliente(self, cliente):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT OR REPLACE INTO clientes (telefono, nombre, puntos)
+            VALUES (?, ?, ?)
+        ''', (cliente.telefono, cliente.nombre_cliente, cliente.puntos))
+        conn.commit()
+        conn.close()
+    
+    def cargar_clientes(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM clientes')
+        rows = cursor.fetchall()
+        conn.close()
+        return rows
+    
+    def guardar_venta(self, venta, detalles, puntos_ganados):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            INSERT INTO ventas 
+            (folio, fecha, telefono_cliente, subtotal, impuestos, descuento, total, puntos_ganados)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (venta['folio'], venta['fecha'], 
+              venta['cliente']['telefono'] if venta['cliente'] else None,
+              venta['subtotal'], venta['impuestos'], venta['descuento'], 
+              venta['total'], puntos_ganados))
+        
+        venta_id = cursor.lastrowid
+        
+        for detalle in detalles:
+            cursor.execute('''
+                INSERT INTO ventas_detalle 
+                (venta_id, codigoBarra, cantidad, precio_unitario, subtotal_detalle, impuesto_detalle)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (venta_id, detalle['producto']['codigoBarra'], detalle['cantidad'],
+                  detalle['precio_unitario'], detalle['subtotal_detalle'], detalle['impuesto_detalle']))
+        
+        conn.commit()
+        conn.close()
+        return venta_id
+
 class Cliente:
     def __init__(self, nombre, telefono, puntos_iniciales=0):
         self.nombre_cliente = nombre
@@ -105,8 +240,11 @@ class Cliente:
 
 class Producto(ABC):
     def __init__(self, codigoBarra, nombre, categoria, precioCompra, precioVenta, stock):
-        self.codigoBarra, self.nombre, self.categoria = codigoBarra, nombre, categoria
-        self.precioCompra, self.precioVenta = precioCompra, precioVenta
+        self.codigoBarra = codigoBarra
+        self.nombre = nombre
+        self.categoria = categoria
+        self.precioCompra = precioCompra
+        self.precioVenta = precioVenta
         self.__stock = stock
         self._observadores = []
 
@@ -161,8 +299,11 @@ class ProductoGranel(Producto):
 class ProductoFactory:
     @staticmethod
     def crear_producto(tipo, *args):
-        if tipo.lower() == "unitario": return ProductoUnitario(*args)
-        if tipo.lower() == "granel": return ProductoGranel(*args)
+        tipo_lower = tipo.lower()
+        if tipo_lower == "unitario" or tipo_lower == "productounitario":
+            return ProductoUnitario(*args)
+        if tipo_lower == "granel" or tipo_lower == "productogranel":
+            return ProductoGranel(*args)
         raise ValueError("Tipo inválido")
 
 class Inventario:
@@ -171,15 +312,39 @@ class Inventario:
         if cls._instancia is None:
             cls._instancia = super(Inventario, cls).__new__(cls)
             cls._instancia.productos = []
+            cls._instancia.db = DatabaseManager()
+            cls._instancia.cargar_desde_bd()
         return cls._instancia
     
-    def agregar(self, p): self.productos.append(p)
-    def buscar(self, cod): return next((p for p in self.productos if p.codigoBarra == cod), None)
-    def listar(self): return [p.to_dict() for p in self.productos]
+    def cargar_desde_bd(self):
+        rows = self.db.cargar_productos()
+        for row in rows:
+            tipo = row[1]
+            if tipo == "ProductoUnitario":
+                tipo = "unitario"
+            elif tipo == "ProductoGranel":
+                tipo = "granel"
+            producto = ProductoFactory.crear_producto(
+                tipo, row[0], row[2], row[3], row[4], row[5], row[6]
+            )
+            producto.agregar_observador(AlertaBajoStock())
+            self.productos.append(producto)
+    
+    def agregar(self, p):
+        self.productos.append(p)
+        self.db.guardar_producto(p)
+    
+    def buscar(self, cod):
+        return next((p for p in self.productos if p.codigoBarra == cod), None)
+    
+    def listar(self):
+        return [p.to_dict() for p in self.productos]
+    
     def eliminar(self, cod):
         producto = self.buscar(cod)
         if producto:
             self.productos.remove(producto)
+            self.db.eliminar_producto(cod)
             return True
         return False
 
@@ -199,10 +364,19 @@ class VentasController:
         self.venta_actual = None
         self.clientes = {}
         self.ventas_realizadas = []
+        self.db = DatabaseManager()
+        self.cargar_clientes_desde_bd()
+    
+    def cargar_clientes_desde_bd(self):
+        rows = self.db.cargar_clientes()
+        for row in rows:
+            cliente = Cliente(row[1], row[0], row[2])
+            self.clientes[row[0]] = cliente
 
     def registrar_cliente(self, nombre, telefono, puntos_iniciales=0):
         cliente = Cliente(nombre, telefono, puntos_iniciales)
         self.clientes[telefono] = cliente
+        self.db.guardar_cliente(cliente)
         return cliente.to_dict()
 
     def obtener_cliente(self, telefono):
@@ -304,6 +478,9 @@ class VentasController:
             if cliente:
                 puntos_ganados = cliente.acumular_puntos(self.venta_actual['total'])
                 self.venta_actual['cliente'] = cliente.to_dict()
+                self.db.guardar_cliente(cliente)
+        
+        self.db.guardar_venta(self.venta_actual, self.venta_actual['carrito'], puntos_ganados)
         
         ticket = self._generar_ticket(puntos_ganados)
         self.ventas_realizadas.append(self.venta_actual)
@@ -316,54 +493,53 @@ class VentasController:
             'puntos_ganados': puntos_ganados
         }
 
-    def _generar_ticket(self, puntos_ganados=0):
-        t = f"""
-        ╔════════════════════════════════════╗
-        ║     ABARROTES DON PEPE              ║
-        ╠════════════════════════════════════╣
-        ║ Folio: {self.venta_actual['folio']:<25} ║
-        ║ Fecha: {datetime.now().strftime('%Y-%m-%d %H:%M'):<23} ║
-        """
-        
-        if self.venta_actual['cliente']:
-            t += f"\n║ Cliente: {self.venta_actual['cliente']['nombre']:<23} ║"
-        
-        t += "\n╠════════════════════════════════════╣\n"
-        
-        for d in self.venta_actual['carrito']:
-            t += f"║ {d['producto']['nombre']:<20} x{d['cantidad']:>3}  ${d['subtotal_detalle']:>7.2f} ║\n"
-        
-        t += f"""
-╠════════════════════════════════════╣
-║ Subtotal:                    ${self.venta_actual['subtotal']:>8.2f} ║
-║ Impuestos:                   ${self.venta_actual['impuestos']:>8.2f} ║
-║ Descuento:                  -${self.venta_actual['descuento']:>8.2f} ║
-╠════════════════════════════════════╣
-║ TOTAL A PAGAR:               ${self.venta_actual['total']:>8.2f} ║
-"""
-        
-        if puntos_ganados > 0:
-            t += f"""
-║ PUNTOS GANADOS:              {puntos_ganados:>8} ║
-║ TOTAL PUNTOS:        {self.venta_actual['cliente']['puntos']:>8} ║
-"""
-        
-        t += "╚════════════════════════════════════╝"
-        return t
+def _generar_ticket(self, puntos_ganados=0):
+    ticket_lines = []
+    ticket_lines.append("=" * 48)
+    ticket_lines.append("     ABARROTES DON PEPE")
+    ticket_lines.append("=" * 48)
+    ticket_lines.append(f"Folio: {self.venta_actual['folio']}")
+    ticket_lines.append(f"Fecha: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    
+    if self.venta_actual['cliente']:
+        ticket_lines.append(f"Cliente: {self.venta_actual['cliente']['nombre']}")
+    
+    ticket_lines.append("-" * 48)
+    
+    for d in self.venta_actual['carrito']:
+        nombre = d['producto']['nombre'][:20]
+        cantidad = d['cantidad']
+        subtotal = d['subtotal_detalle']
+        ticket_lines.append(f"{nombre:<20} x{cantidad:>3}  ${subtotal:>7.2f}")
+    
+    ticket_lines.append("-" * 48)
+    ticket_lines.append(f"Subtotal: ${self.venta_actual['subtotal']:>8.2f}")
+    ticket_lines.append(f"Impuestos: ${self.venta_actual['impuestos']:>8.2f}")
+    ticket_lines.append(f"Descuento: -${self.venta_actual['descuento']:>8.2f}")
+    ticket_lines.append("=" * 48)
+    ticket_lines.append(f"TOTAL A PAGAR: ${self.venta_actual['total']:>8.2f}")
+    
+    if puntos_ganados > 0:
+        ticket_lines.append("-" * 48)
+        ticket_lines.append(f"PUNTOS GANADOS: {puntos_ganados}")
+        ticket_lines.append(f"TOTAL PUNTOS: {self.venta_actual['cliente']['puntos']}")
+    
+    ticket_lines.append("=" * 48)
+    
+    return "\n".join(ticket_lines)
 
 inventario = Inventario()
 ctrl_inventario = InventarioController(inventario)
 ctrl_ventas = VentasController(inventario)
 
-# Datos de ejemplo
-ctrl_inventario.registrar_producto("unitario", "101", "Leche", "Lacteos", 10, 20, 50)
-ctrl_inventario.registrar_producto("unitario", "102", "Pan", "Panaderia", 5, 15, 60)
-ctrl_inventario.registrar_producto("unitario", "103", "Huevos", "Lacteos", 8, 25, 100)
-ctrl_inventario.registrar_producto("granel", "201", "Arroz", "Granos", 12, 22, 80)
-ctrl_inventario.registrar_producto("granel", "202", "Frijol", "Granos", 15, 28, 70)
-
-ctrl_ventas.registrar_cliente("Ana Lopez", "555-9876", 5)
-ctrl_ventas.registrar_cliente("Edgar Rocha", "664-9866", 0)
+if len(inventario.productos) == 0:
+    ctrl_inventario.registrar_producto("unitario", "101", "Leche", "Lacteos", 10, 20, 50)
+    ctrl_inventario.registrar_producto("unitario", "102", "Pan", "Panaderia", 5, 15, 60)
+    ctrl_inventario.registrar_producto("unitario", "103", "Huevos", "Lacteos", 8, 25, 100)
+    ctrl_inventario.registrar_producto("granel", "201", "Arroz", "Granos", 12, 22, 80)
+    ctrl_inventario.registrar_producto("granel", "202", "Frijol", "Granos", 15, 28, 70)
+    ctrl_ventas.registrar_cliente("Ana Lopez", "555-9876", 5)
+    ctrl_ventas.registrar_cliente("Edgar Rocha", "664-9866", 0)
 
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
@@ -472,6 +648,34 @@ async def check():
         "current_directory": os.getcwd(),
         "files_in_templates": os.listdir("templates") if os.path.exists("templates") else [],
         "files_in_static": os.listdir("static") if os.path.exists("static") else []
+    }
+
+@app.get("/api/reportes/ventas")
+async def reporte_ventas():
+    db = DatabaseManager()
+    conn = sqlite3.connect(db.db_name)
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT v.folio, v.fecha, v.total, c.nombre, v.puntos_ganados
+        FROM ventas v
+        LEFT JOIN clientes c ON v.telefono_cliente = c.telefono
+        ORDER BY v.fecha DESC
+        LIMIT 50
+    ''')
+    rows = cursor.fetchall()
+    conn.close()
+    
+    return {
+        "ventas": [
+            {
+                "folio": row[0],
+                "fecha": row[1],
+                "total": row[2],
+                "cliente": row[3] if row[3] else "Público General",
+                "puntos_ganados": row[4]
+            }
+            for row in rows
+        ]
     }
 
 if __name__ == "__main__":

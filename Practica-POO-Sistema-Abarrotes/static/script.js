@@ -1,21 +1,45 @@
-// Estado global
 let productos = [];
 let ventaActual = null;
 let folioContador = 100;
+let rolActual = null;
 
-// Inicialización
 document.addEventListener('DOMContentLoaded', () => {
-    cargarProductos();
-    cargarClientes();
-    nuevaVenta();
-
-    // Event listeners
     document.getElementById('formProducto').addEventListener('submit', registrarProducto);
     document.getElementById('formCliente').addEventListener('submit', registrarCliente);
     document.getElementById('tipoDescuento').addEventListener('change', toggleCamposDescuento);
 });
 
-// ==================== FUNCIONES DE PRODUCTOS ====================
+function seleccionarRol(rol) {
+    rolActual = rol;
+    document.getElementById('menuInicial').style.display = 'none';
+    document.getElementById('contenidoPrincipal').style.display = 'block';
+
+    const rolText = rol === 'empleado' ? 'Empleado - Modo Administración' : 'Cliente - Modo Compra';
+    document.getElementById('rolActual').innerHTML = `<i class="fas ${rol === 'empleado' ? 'fa-user-tie' : 'fa-user'}"></i> ${rolText}`;
+
+    if (rol === 'empleado') {
+        document.getElementById('btnAgregarProducto').style.display = 'block';
+        document.getElementById('btnNuevoCliente').style.display = 'block';
+        document.getElementById('descuentoSection').style.display = 'block';
+    } else {
+        document.getElementById('btnAgregarProducto').style.display = 'none';
+        document.getElementById('btnNuevoCliente').style.display = 'none';
+        document.getElementById('descuentoSection').style.display = 'none';
+    }
+
+    cargarProductos();
+    cargarClientes();
+    nuevaVenta();
+}
+
+function cerrarSesion() {
+    rolActual = null;
+    document.getElementById('contenidoPrincipal').style.display = 'none';
+    document.getElementById('menuInicial').style.display = 'flex';
+    productos = [];
+    ventaActual = null;
+}
+
 async function cargarProductos() {
     try {
         const response = await fetch('/api/productos');
@@ -51,12 +75,18 @@ function mostrarProductos() {
             <button onclick="agregarAlCarrito('${producto.codigoBarra}')" class="btn-agregar-carrito" ${producto.stock <= 0 ? 'disabled' : ''}>
                 <i class="fas fa-cart-plus"></i> ${producto.stock <= 0 ? 'Sin Stock' : 'Agregar'}
             </button>
+            ${rolActual === 'empleado' ? `<button onclick="eliminarProducto('${producto.codigoBarra}')" class="btn-eliminar" style="margin-top:5px; background:#f56565; color:white; border:none; border-radius:5px; padding:5px; cursor:pointer;"><i class="fas fa-trash"></i> Eliminar</button>` : ''}
         </div>
     `).join('');
 }
 
 async function registrarProducto(event) {
     event.preventDefault();
+
+    if (rolActual !== 'empleado') {
+        mostrarNotificacion('No tienes permisos para registrar productos', 'error');
+        return;
+    }
 
     const producto = {
         tipo: document.getElementById('tipoProducto').value,
@@ -68,7 +98,6 @@ async function registrarProducto(event) {
         stock: parseFloat(document.getElementById('stockProducto').value)
     };
 
-    // Validaciones
     if (!producto.codigoBarra || !producto.nombre || !producto.categoria) {
         mostrarNotificacion('Por favor completa todos los campos', 'error');
         return;
@@ -102,6 +131,11 @@ async function registrarProducto(event) {
 }
 
 async function eliminarProducto(codigoBarra) {
+    if (rolActual !== 'empleado') {
+        mostrarNotificacion('No tienes permisos para eliminar productos', 'error');
+        return;
+    }
+
     const confirmar = confirm('¿Estás seguro de eliminar este producto?');
     if (!confirmar) return;
 
@@ -122,7 +156,6 @@ async function eliminarProducto(codigoBarra) {
     }
 }
 
-// ==================== FUNCIONES DE CLIENTES ====================
 async function cargarClientes() {
     try {
         const response = await fetch('/api/clientes');
@@ -141,6 +174,11 @@ async function cargarClientes() {
 
 async function registrarCliente(event) {
     event.preventDefault();
+
+    if (rolActual !== 'empleado') {
+        mostrarNotificacion('No tienes permisos para registrar clientes', 'error');
+        return;
+    }
 
     const cliente = {
         nombre: document.getElementById('nombreCliente').value,
@@ -175,7 +213,6 @@ async function registrarCliente(event) {
     }
 }
 
-// ==================== FUNCIONES DE VENTAS ====================
 async function nuevaVenta() {
     folioContador++;
     const folio = `F-${folioContador}`;
@@ -196,7 +233,6 @@ async function nuevaVenta() {
             ventaActual = data.venta;
             document.getElementById('folioVenta').textContent = `Folio: ${folio}`;
             actualizarCarrito();
-            // Limpiar campos de descuento
             document.getElementById('tipoDescuento').value = 'ninguno';
             document.getElementById('valorDescuento').value = '';
             document.getElementById('categoriaDescuento').value = '';
@@ -252,10 +288,8 @@ async function agregarAlCarrito(codigoBarra) {
                 result.alertas.forEach(alerta => mostrarNotificacion(alerta, 'warning'));
             }
             ventaActual.carrito = result.carrito_actual;
-            // Recalcular totales
             await recalcularTotales();
             actualizarCarrito();
-            // Recargar productos para actualizar stock
             await cargarProductos();
         }
     } catch (error) {
@@ -336,9 +370,13 @@ function toggleCamposDescuento() {
 }
 
 async function aplicarDescuento() {
+    if (rolActual !== 'empleado') {
+        mostrarNotificacion('Los descuentos solo pueden ser aplicados por empleados', 'error');
+        return;
+    }
+
     const tipo = document.getElementById('tipoDescuento').value;
     if (tipo === 'ninguno') {
-        // Quitar descuento
         ventaActual.descuento = 0;
         await recalcularTotales();
         actualizarCarrito();
@@ -403,7 +441,6 @@ async function finalizarVenta() {
         return;
     }
 
-    // Mostrar resumen para confirmar
     const totalMostrar = ventaActual.total.toFixed(2);
     const confirmar = confirm(`Total a pagar: $${totalMostrar}\n¿Confirmar venta?`);
     if (!confirmar) return;
@@ -418,11 +455,8 @@ async function finalizarVenta() {
         if (response.ok) {
             mostrarTicket(result.ticket);
             mostrarNotificacion(`Venta completada. Puntos ganados: ${result.puntos_ganados}`, 'success');
-            // Recargar productos para actualizar stocks
             await cargarProductos();
-            // Recargar clientes para actualizar puntos
             await cargarClientes();
-            // Iniciar nueva venta
             await nuevaVenta();
         } else {
             mostrarNotificacion(result.error || 'Error al finalizar venta', 'error');
@@ -433,14 +467,12 @@ async function finalizarVenta() {
     }
 }
 
-// ==================== FUNCIONES DE TICKET ====================
 function mostrarTicket(ticket) {
     const modal = document.getElementById('modalTicket');
     const ticketContent = document.getElementById('ticketContent');
     ticketContent.textContent = ticket;
     modal.style.display = 'block';
 
-    // Opción para imprimir
     setTimeout(() => {
         const imprimirBtn = document.createElement('button');
         imprimirBtn.innerHTML = '<i class="fas fa-print"></i> Imprimir Ticket';
@@ -458,8 +490,11 @@ function mostrarTicket(ticket) {
     }, 100);
 }
 
-// ==================== FUNCIONES DE MODALES ====================
 function mostrarModalProducto() {
+    if (rolActual !== 'empleado') {
+        mostrarNotificacion('No tienes permisos', 'error');
+        return;
+    }
     const modal = document.getElementById('modalProducto');
     modal.style.display = 'block';
 }
@@ -471,6 +506,10 @@ function cerrarModalProducto() {
 }
 
 function mostrarModalCliente() {
+    if (rolActual !== 'empleado') {
+        mostrarNotificacion('No tienes permisos', 'error');
+        return;
+    }
     const modal = document.getElementById('modalCliente');
     modal.style.display = 'block';
 }
@@ -488,9 +527,7 @@ function cerrarModalTicket() {
     if (printBtn) printBtn.remove();
 }
 
-// ==================== FUNCIONES DE NOTIFICACIONES ====================
 function mostrarNotificacion(mensaje, tipo) {
-    // Crear elemento de notificación
     const notificacion = document.createElement('div');
     notificacion.className = `notificacion notificacion-${tipo}`;
     notificacion.innerHTML = `
@@ -500,25 +537,20 @@ function mostrarNotificacion(mensaje, tipo) {
 
     document.body.appendChild(notificacion);
 
-    // Animación de entrada
     setTimeout(() => notificacion.classList.add('mostrar'), 10);
 
-    // Auto-cerrar después de 3 segundos
     setTimeout(() => {
         notificacion.classList.remove('mostrar');
         setTimeout(() => notificacion.remove(), 300);
     }, 3000);
 }
 
-// ==================== FUNCIÓN UTILITARIA ====================
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
 }
 
-// ==================== EVENTOS GLOBALES ====================
-// Cerrar modales al hacer clic fuera
 window.onclick = function (event) {
     const modales = document.querySelectorAll('.modal');
     modales.forEach(modal => {
@@ -528,7 +560,6 @@ window.onclick = function (event) {
     });
 }
 
-// Cambiar cliente cuando se selecciona uno nuevo
 document.getElementById('clienteSelect').addEventListener('change', async function () {
     if (ventaActual && ventaActual.carrito && ventaActual.carrito.length > 0) {
         const confirmar = confirm('Cambiar de cliente reiniciará la venta actual. ¿Continuar?');

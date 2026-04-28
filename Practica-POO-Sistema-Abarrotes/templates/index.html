@@ -11,142 +11,165 @@
 </head>
 
 <body>
-    <div class="container">
-        <header>
-            <div class="logo">
-                <i class="fas fa-store"></i>
-                <h1>ABARROTES DON PEPE</h1>
+    <div id="menuInicial" class="menu-inicial">
+        <div class="menu-card">
+            <h2>Selecciona tu rol</h2>
+            <div class="rol-buttons">
+                <button onclick="seleccionarRol('empleado')" class="btn-rol empleado">
+                    <i class="fas fa-user-tie"></i>
+                    <span>Empleado</span>
+                    <small>Gestionar inventario, precios y ventas</small>
+                </button>
+                <button onclick="seleccionarRol('cliente')" class="btn-rol cliente">
+                    <i class="fas fa-user"></i>
+                    <span>Cliente</span>
+                    <small>Ver productos y comprar</small>
+                </button>
             </div>
-            <p class="slogan">Tu tienda de confianza</p>
-        </header>
+        </div>
+    </div>
 
-        <div class="main-content">
-            <!-- Panel de Productos -->
-            <div class="panel productos-panel">
-                <div class="panel-header">
-                    <h2><i class="fas fa-boxes"></i> Inventario</h2>
-                    <button class="btn-agregar" onclick="mostrarModalProducto()">
-                        <i class="fas fa-plus"></i> Agregar Producto
-                    </button>
+    <div id="contenidoPrincipal" style="display: none;">
+        <div class="container">
+            <header>
+                <div class="logo">
+                    <i class="fas fa-store"></i>
+                    <h1>ABARROTES DON PEPE</h1>
                 </div>
-                <div class="productos-grid" id="productosGrid">
-                    <!-- Productos se cargarán aquí -->
-                </div>
+                <p class="slogan">Tu tienda de confianza</p>
+            </header>
+
+            <div class="rol-header">
+                <span id="rolActual"></span>
+                <button onclick="cerrarSesion()" class="btn-cerrar-sesion">
+                    <i class="fas fa-sign-out-alt"></i> Cambiar de rol
+                </button>
             </div>
 
-            <!-- Panel de Ventas -->
-            <div class="panel ventas-panel">
-                <div class="panel-header">
-                    <h2><i class="fas fa-shopping-cart"></i> Punto de Venta</h2>
-                    <div class="cliente-selector">
-                        <select id="clienteSelect">
-                            <option value="">Público General</option>
-                        </select>
-                        <button class="btn-small" onclick="mostrarModalCliente()">
-                            <i class="fas fa-user-plus"></i> Nuevo Cliente
+            <div class="main-content">
+                <div class="panel productos-panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-boxes"></i> Productos Disponibles</h2>
+                        <button id="btnAgregarProducto" class="btn-agregar" style="display: none;"
+                            onclick="mostrarModalProducto()">
+                            <i class="fas fa-plus"></i> Agregar Producto
                         </button>
                     </div>
+                    <div class="productos-grid" id="productosGrid"></div>
                 </div>
 
-                <div class="venta-actual">
-                    <div class="carrito-header">
-                        <h3>Carrito de Compra</h3>
-                        <span id="folioVenta" class="folio"></span>
-                    </div>
-                    <div class="carrito-items" id="carritoItems">
-                        <!-- Items del carrito -->
-                        <div class="carrito-vacio">Agrega productos al carrito</div>
-                    </div>
-
-                    <div class="descuento-section">
-                        <h4><i class="fas fa-tag"></i> Aplicar Descuento</h4>
-                        <div class="descuento-opciones">
-                            <select id="tipoDescuento">
-                                <option value="ninguno">Sin descuento</option>
-                                <option value="porcentaje">Porcentaje (%)</option>
-                                <option value="fijo">Monto fijo ($)</option>
-                                <option value="3x2">3x2 por categoría</option>
+                <div class="panel ventas-panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-shopping-cart"></i> Punto de Venta</h2>
+                        <div class="cliente-selector">
+                            <select id="clienteSelect">
+                                <option value="">Público General</option>
                             </select>
-                            <input type="number" id="valorDescuento" placeholder="Valor" step="0.01">
-                            <input type="text" id="categoriaDescuento" placeholder="Categoría (para 3x2)">
-                            <button onclick="aplicarDescuento()" class="btn-descuento">
-                                <i class="fas fa-percent"></i> Aplicar
+                            <button id="btnNuevoCliente" class="btn-small" style="display: none;"
+                                onclick="mostrarModalCliente()">
+                                <i class="fas fa-user-plus"></i> Nuevo Cliente
                             </button>
                         </div>
                     </div>
 
-                    <div class="totales">
-                        <div class="total-line">
-                            <span>Subtotal:</span>
-                            <span id="subtotal">$0.00</span>
+                    <div class="venta-actual">
+                        <div class="carrito-header">
+                            <h3>Carrito de Compra</h3>
+                            <span id="folioVenta" class="folio"></span>
                         </div>
-                        <div class="total-line">
-                            <span>Impuestos:</span>
-                            <span id="impuestos">$0.00</span>
+                        <div class="carrito-items" id="carritoItems">
+                            <div class="carrito-vacio">Agrega productos al carrito</div>
                         </div>
-                        <div class="total-line">
-                            <span>Descuento:</span>
-                            <span id="descuento">-$0.00</span>
-                        </div>
-                        <div class="total-line total-final">
-                            <span>TOTAL:</span>
-                            <span id="total">$0.00</span>
-                        </div>
-                    </div>
 
-                    <div class="acciones-venta">
-                        <button onclick="finalizarVenta()" class="btn-cobrar">
-                            <i class="fas fa-money-bill-wave"></i> Cobrar
-                        </button>
-                        <button onclick="nuevaVenta()" class="btn-nueva">
-                            <i class="fas fa-plus-circle"></i> Nueva Venta
-                        </button>
+                        <div id="descuentoSection" class="descuento-section">
+                            <h4><i class="fas fa-tag"></i> Aplicar Descuento</h4>
+                            <div class="descuento-opciones">
+                                <select id="tipoDescuento">
+                                    <option value="ninguno">Sin descuento</option>
+                                    <option value="porcentaje">Porcentaje (%)</option>
+                                    <option value="fijo">Monto fijo ($)</option>
+                                    <option value="3x2">3x2 por categoría</option>
+                                </select>
+                                <input type="number" id="valorDescuento" placeholder="Valor" step="0.01">
+                                <input type="text" id="categoriaDescuento" placeholder="Categoría (para 3x2)">
+                                <button onclick="aplicarDescuento()" class="btn-descuento">
+                                    <i class="fas fa-percent"></i> Aplicar
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="totales">
+                            <div class="total-line">
+                                <span>Subtotal:</span>
+                                <span id="subtotal">$0.00</span>
+                            </div>
+                            <div class="total-line">
+                                <span>Impuestos:</span>
+                                <span id="impuestos">$0.00</span>
+                            </div>
+                            <div class="total-line">
+                                <span>Descuento:</span>
+                                <span id="descuento">-$0.00</span>
+                            </div>
+                            <div class="total-line total-final">
+                                <span>TOTAL:</span>
+                                <span id="total">$0.00</span>
+                            </div>
+                        </div>
+
+                        <div class="acciones-venta">
+                            <button onclick="finalizarVenta()" class="btn-cobrar">
+                                <i class="fas fa-money-bill-wave"></i> Cobrar
+                            </button>
+                            <button onclick="nuevaVenta()" class="btn-nueva">
+                                <i class="fas fa-plus-circle"></i> Nueva Venta
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Modales -->
-        <div id="modalProducto" class="modal">
-            <div class="modal-content">
-                <span class="close" onclick="cerrarModalProducto()">&times;</span>
-                <h2><i class="fas fa-box"></i> Registrar Producto</h2>
-                <form id="formProducto">
-                    <select id="tipoProducto" required>
-                        <option value="unitario">Producto Unitario</option>
-                        <option value="granel">Producto a Granel</option>
-                    </select>
-                    <input type="text" id="codigoProducto" placeholder="Código de barras" required>
-                    <input type="text" id="nombreProducto" placeholder="Nombre" required>
-                    <input type="text" id="categoriaProducto" placeholder="Categoría" required>
-                    <input type="number" id="precioCompraProducto" placeholder="Precio compra" step="0.01" required>
-                    <input type="number" id="precioVentaProducto" placeholder="Precio venta" step="0.01" required>
-                    <input type="number" id="stockProducto" placeholder="Stock inicial" step="0.01" required>
-                    <button type="submit">Registrar Producto</button>
-                </form>
-            </div>
+    <div id="modalProducto" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="cerrarModalProducto()">&times;</span>
+            <h2><i class="fas fa-box"></i> Registrar Producto</h2>
+            <form id="formProducto">
+                <select id="tipoProducto" required>
+                    <option value="unitario">Producto Unitario</option>
+                    <option value="granel">Producto a Granel</option>
+                </select>
+                <input type="text" id="codigoProducto" placeholder="Código de barras" required>
+                <input type="text" id="nombreProducto" placeholder="Nombre" required>
+                <input type="text" id="categoriaProducto" placeholder="Categoría" required>
+                <input type="number" id="precioCompraProducto" placeholder="Precio compra" step="0.01" required>
+                <input type="number" id="precioVentaProducto" placeholder="Precio venta" step="0.01" required>
+                <input type="number" id="stockProducto" placeholder="Stock inicial" step="0.01" required>
+                <button type="submit">Registrar Producto</button>
+            </form>
         </div>
+    </div>
 
-        <div id="modalCliente" class="modal">
-            <div class="modal-content">
-                <span class="close" onclick="cerrarModalCliente()">&times;</span>
-                <h2><i class="fas fa-user"></i> Registrar Cliente</h2>
-                <form id="formCliente">
-                    <input type="text" id="nombreCliente" placeholder="Nombre completo" required>
-                    <input type="tel" id="telefonoCliente" placeholder="Teléfono" required>
-                    <input type="number" id="puntosCliente" placeholder="Puntos iniciales" value="0">
-                    <button type="submit">Registrar Cliente</button>
-                </form>
-            </div>
+    <div id="modalCliente" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="cerrarModalCliente()">&times;</span>
+            <h2><i class="fas fa-user"></i> Registrar Cliente</h2>
+            <form id="formCliente">
+                <input type="text" id="nombreCliente" placeholder="Nombre completo" required>
+                <input type="tel" id="telefonoCliente" placeholder="Teléfono" required>
+                <input type="number" id="puntosCliente" placeholder="Puntos iniciales" value="0">
+                <button type="submit">Registrar Cliente</button>
+            </form>
         </div>
+    </div>
 
-        <div id="modalTicket" class="modal">
-            <div class="modal-content ticket-modal">
-                <span class="close" onclick="cerrarModalTicket()">&times;</span>
-                <h2><i class="fas fa-receipt"></i> Ticket de Venta</h2>
-                <pre id="ticketContent" class="ticket-content"></pre>
-                <button onclick="cerrarModalTicket()" class="btn-cerrar">Cerrar</button>
-            </div>
+    <div id="modalTicket" class="modal">
+        <div class="modal-content ticket-modal">
+            <span class="close" onclick="cerrarModalTicket()">&times;</span>
+            <h2><i class="fas fa-receipt"></i> Ticket de Venta</h2>
+            <pre id="ticketContent" class="ticket-content"></pre>
+            <button onclick="cerrarModalTicket()" class="btn-cerrar">Cerrar</button>
         </div>
     </div>
 

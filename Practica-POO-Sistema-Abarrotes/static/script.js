@@ -2,6 +2,7 @@ let productos = [];
 let ventaActual = null;
 let folioContador = 100;
 let rolActual = null;
+let contrasenaCorrecta = "admin123";
 
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('formProducto').addEventListener('submit', registrarProducto);
@@ -31,6 +32,54 @@ function seleccionarRol(rol) {
     cargarClientes();
     nuevaVenta();
 }
+
+function solicitarContrasena() {
+    const modal = document.getElementById('modalPassword');
+    modal.style.display = 'block';
+    document.getElementById('passwordInput').value = '';
+    document.getElementById('passwordError').innerHTML = '';
+    document.getElementById('passwordInput').focus();
+}
+
+function cerrarModalPassword() {
+    const modal = document.getElementById('modalPassword');
+    modal.style.display = 'none';
+    document.getElementById('passwordError').innerHTML = '';
+}
+
+function verificarPassword() {
+    const password = document.getElementById('passwordInput').value;
+    const loadingOverlay = document.getElementById('loadingOverlay');
+
+    if (!password) {
+        document.getElementById('passwordError').innerHTML = 'Por favor ingresa la contraseña';
+        return;
+    }
+
+    loadingOverlay.style.display = 'flex';
+
+    setTimeout(() => {
+        loadingOverlay.style.display = 'none';
+
+        if (password === contrasenaCorrecta) {
+            cerrarModalPassword();
+            seleccionarRol('empleado');
+        } else {
+            document.getElementById('passwordError').innerHTML = 'Contraseña incorrecta. Intenta nuevamente.';
+            document.getElementById('passwordInput').value = '';
+            document.getElementById('passwordInput').focus();
+        }
+    }, 1500);
+}
+
+document.addEventListener('keypress', function (event) {
+    if (event.key === 'Enter') {
+        const modalPassword = document.getElementById('modalPassword');
+        if (modalPassword && modalPassword.style.display === 'block') {
+            verificarPassword();
+        }
+    }
+});
 
 function cerrarSesion() {
     rolActual = null;

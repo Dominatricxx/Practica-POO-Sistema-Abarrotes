@@ -15,7 +15,7 @@
         <div class="menu-card">
             <h2>Selecciona tu rol</h2>
             <div class="rol-buttons">
-                <button onclick="seleccionarRol('empleado')" class="btn-rol empleado">
+                <button onclick="solicitarContrasena()" class="btn-rol empleado">
                     <i class="fas fa-user-tie"></i>
                     <span>Empleado</span>
                     <small>Gestionar inventario, precios y ventas</small>
@@ -25,6 +25,27 @@
                     <span>Cliente</span>
                     <small>Ver productos y comprar</small>
                 </button>
+            </div>
+        </div>
+        <div id="modalPassword" class="modal">
+            <div class="modal-content password-modal">
+                <span class="close" onclick="cerrarModalPassword()">&times;</span>
+                <div class="password-header">
+                    <i class="fas fa-lock"></i>
+                    <h2>Acceso Empleado</h2>
+                </div>
+                <p>Ingresa la contraseña para continuar</p>
+                <div class="password-input-container">
+                    <input type="password" id="passwordInput" placeholder="Contraseña" autocomplete="off">
+                    <button onclick="verificarPassword()" class="btn-verificar">
+                        <i class="fas fa-arrow-right"></i> Verificar
+                    </button>
+                </div>
+                <div id="passwordError" class="password-error"></div>
+                <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Verificando acceso...</p>
+                </div>
             </div>
         </div>
     </div>

@@ -117,7 +117,9 @@ class DatabaseManager:
             CREATE TABLE IF NOT EXISTS clientes (
                 telefono TEXT PRIMARY KEY,
                 nombre TEXT NOT NULL,
-                puntos INTEGER DEFAULT 0
+                puntos INTEGER DEFAULT 0,
+                email TEXT,
+                password TEXT
             )
         ''')
         
@@ -224,31 +226,6 @@ class DatabaseManager:
         ''', (producto.codigoBarra, producto.__class__.__name__, producto.nombre, 
             producto.categoria, producto.precioCompra, producto.precioVenta, 
             producto.stock, producto.imagen_url))
-        conn.commit()
-        conn.close()
-    
-    def cargar_productos(self):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute('SELECT codigoBarra, tipo, nombre, categoria, precioCompra, precioVenta, stock, imagen_url FROM productos')
-        rows = cursor.fetchall()
-        conn.close()
-        return rows
-    
-    def eliminar_producto(self, codigoBarra):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute('DELETE FROM productos WHERE codigoBarra = ?', (codigoBarra,))
-        conn.commit()
-        conn.close()
-    
-    def guardar_cliente(self, cliente):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute('''
-            INSERT OR REPLACE INTO clientes (telefono, nombre, puntos)
-            VALUES (?, ?, ?)
-        ''', (cliente.telefono, cliente.nombre_cliente, cliente.puntos))
         conn.commit()
         conn.close()
     
@@ -400,23 +377,11 @@ class DatabaseManager:
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
         cursor.execute('''
-            INSERT OR REPLACE INTO clientes (telefono, nombre, puntos)
-            VALUES (?, ?, ?)
-        ''', (cliente.telefono, cliente.nombre_cliente, cliente.puntos))
+            INSERT OR REPLACE INTO clientes (telefono, nombre, puntos, email, password)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (cliente.telefono, cliente.nombre_cliente, cliente.puntos, cliente.email, cliente.password))
         conn.commit()
         conn.close()
-    
-    def cargar_clientes(self):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
-        cursor.execute('SELECT * FROM clientes')
-        rows = cursor.fetchall()
-        conn.close()
-        return rows
-    
-    def guardar_venta(self, venta, detalles, puntos_ganados):
-        conn = sqlite3.connect(self.db_name)
-        cursor = conn.cursor()
         
         cursor.execute('''
             INSERT INTO ventas 
@@ -472,10 +437,12 @@ class DatabaseManager:
         return empleados
 
 class Cliente:
-    def __init__(self, nombre, telefono, puntos_iniciales=0):
+    def __init__(self, nombre, telefono, puntos_iniciales=0, email="", password=""):
         self.nombre_cliente = nombre
         self.telefono = telefono
         self.puntos = puntos_iniciales
+        self.email = email
+        self.password = password
 
     def acumular_puntos(self, monto_total):
         nuevos_puntos = int(monto_total // 10)
@@ -486,7 +453,8 @@ class Cliente:
         return {
             'nombre': self.nombre_cliente,
             'telefono': self.telefono,
-            'puntos': self.puntos
+            'puntos': self.puntos,
+            'email': self.email
         }
 
 class Producto(ABC):
@@ -627,11 +595,13 @@ class VentasController:
     def cargar_clientes_desde_bd(self):
         rows = self.db.cargar_clientes()
         for row in rows:
-            cliente = Cliente(row[1], row[0], row[2])
+            email = row[3] if len(row) > 3 else ""
+            password = row[4] if len(row) > 4 else ""
+            cliente = Cliente(row[1], row[0], row[2], email, password)
             self.clientes[row[0]] = cliente
 
-    def registrar_cliente(self, nombre, telefono, puntos_iniciales=0):
-        cliente = Cliente(nombre, telefono, puntos_iniciales)
+    def registrar_cliente(self, nombre, telefono, puntos_iniciales=0, email="", password=""):
+        cliente = Cliente(nombre, telefono, puntos_iniciales, email, password)
         self.clientes[telefono] = cliente
         self.db.guardar_cliente(cliente)
         return cliente.to_dict()
@@ -881,13 +851,49 @@ async def get_clientes():
     return ctrl_ventas.listar_clientes()
 
 @app.post("/api/clientes")
-async def crear_cliente(cliente: ClienteCreate):
-    nuevo = ctrl_ventas.registrar_cliente(
-        cliente.nombre,
-        cliente.telefono,
-        cliente.puntos_iniciales
-    )
-    return {"success": True, "cliente": nuevo}
+async def crear_cliente(request: Request):
+    try:
+        data = await request.json()
+        nombre = data.get("nombre")
+        telefono = data.get("telefono")
+        puntos_iniciales = data.get("puntos_iniciales", 0)
+        email = data.get("email", "")
+        password = data.get("password", "")
+        nuevo = ctrl_ventas.registrar_cliente(nombre, telefono, puntos_iniciales, email, password)
+        return {"success": True, "cliente": nuevo}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+        
+@app.post("/api/clientes/verificar")
+async def verificar_cliente(request: Request):
+    try:
+        data = await request.json()
+        email = data.get("email")
+        password = data.get("password")
+        
+        if not email or not password:
+            raise HTTPException(status_code=400, detail="Email y contrasena requeridos")
+        
+        conn = sqlite3.connect("abarrotes.db")
+        cursor = conn.cursor()
+        cursor.execute('''
+            SELECT nombre, telefono, puntos FROM clientes 
+            WHERE email = ? AND password = ?
+        ''', (email, password))
+        resultado = cursor.fetchone()
+        conn.close()
+        
+        if resultado:
+            return {
+                "success": True,
+                "nombre": resultado[0],
+                "telefono": resultado[1],
+                "puntos": resultado[2]
+            }
+        else:
+            return {"success": False, "message": "Email o contrasena incorrectos"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/api/ventas/nueva")
 async def nueva_venta(request: Request):

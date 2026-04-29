@@ -11,28 +11,56 @@
 </head>
 
 <body>
-
     <div id="menuInicial" class="menu-inicial">
         <div class="menu-card">
-            <h2>Selecciona tu rol</h2>
+            <h2>Favor de seleccionar una opción</h2>
             <div class="rol-buttons">
                 <button onclick="mostrarLoginEmpleado()" class="btn-rol empleado">
                     <i class="fas fa-user-tie"></i>
                     <span>Empleado</span>
                 </button>
-                <button onclick="seleccionarRol('cliente')" class="btn-rol cliente">
+                <button onclick="mostrarLoginCliente()" class="btn-rol cliente">
                     <i class="fas fa-user"></i>
                     <span>Cliente</span>
                 </button>
             </div>
-            <div class="admin-link" style="margin-top: 20px; text-align: center;">
-                <button onclick="solicitarContrasena()" class="btn-admin"
-                    style="background: none; border: none; color: #ccc; cursor: pointer; font-size: 0.9em;">
-                    <i class="fas fa-user-plus"></i> Registrar nuevo empleado
-                </button>
+        </div>
+        <div id="modalLoginCliente" class="modal">
+            <div class="modal-content password-modal">
+                <span class="close" onclick="cerrarModalLoginCliente()">&times;</span>
+                <div class="password-header">
+                    <i class="fas fa-user"></i>
+                    <h2>Acceso Cliente</h2>
+                </div>
+                <p>Ingresa tus credenciales</p>
+                <div class="password-input-container" style="flex-direction: column; gap: 10px;">
+                    <input type="email" id="loginClienteEmail" placeholder="Email" autocomplete="off"
+                        style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px;">
+                    <input type="password" id="loginClientePassword" placeholder="Contrasena" autocomplete="off"
+                        style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px;">
+                    <button onclick="verificarLoginCliente()" class="btn-verificar">
+                        <i class="fas fa-arrow-right"></i> Ingresar
+                    </button>
+                </div>
+                <div id="loginClienteError" class="password-error"></div>
+                <button onclick="cerrarModalLoginCliente(); mostrarRegistroCliente();"
+                    style="width:100%; margin-top:12px; padding:10px; background:#ffd966; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">Registrarme
+                    como cliente nuevo</button>
             </div>
         </div>
-
+        <div id="modalRegistroCliente" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="cerrarModalRegistroCliente()">&times;</span>
+                <h2><i class="fas fa-user-plus"></i> Registro de Cliente</h2>
+                <form id="formRegistroCliente">
+                    <input type="text" id="regClienteNombre" placeholder="Nombre completo" required>
+                    <input type="email" id="regClienteEmail" placeholder="Email" required>
+                    <input type="tel" id="regClienteTelefono" placeholder="Telefono" required>
+                    <input type="password" id="regClientePassword" placeholder="Contrasena" required>
+                    <button type="submit">Registrarme</button>
+                </form>
+            </div>
+        </div>
         <div id="modalLoginEmpleado" class="modal">
             <div class="modal-content password-modal">
                 <span class="close" onclick="cerrarModalLoginEmpleado()">&times;</span>
@@ -51,6 +79,9 @@
                     </button>
                 </div>
                 <div id="loginError" class="password-error"></div>
+                <button onclick="cerrarModalLoginEmpleado(); solicitarContrasena();"
+                    style="width:100%; margin-top:12px; padding:10px; background:#ffd966; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">Registrar
+                    nuevo empleado</button>
             </div>
         </div>
 
@@ -324,7 +355,6 @@
             </form>
         </div>
     </div>
-
     <div id="modalTicket" class="modal">
         <div class="modal-content ticket-modal">
             <span class="close" onclick="cerrarModalTicket()">&times;</span>

@@ -272,6 +272,10 @@
 
             <div id="reporteContenidoEmpleado" class="reportes-scroll">
             </div>
+            <button onclick="mostrarBaseDatosUsuarios()"
+                style="width: 100%; margin-top: 20px; padding: 14px; background: #48bb78; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1.1em; font-weight: bold; transition: background 0.3s ease;">
+                <i class="fas fa-database"></i> Ver Base de Datos de Usuarios
+            </button>
         </div>
 
         <div class="panel-inventario-empleado">
@@ -507,6 +511,61 @@
                 </select>
                 <button type="submit">Guardar Cambios</button>
             </form>
+        </div>
+    </div>
+    <div id="modalBaseDatosUsuarios" class="modal">
+        <div class="modal-content" style="max-width: 900px; width: 95%;">
+            <span class="close" onclick="cerrarModalBaseDatosUsuarios()">&times;</span>
+            <h2 style="margin-bottom: 25px;"><i class="fas fa-database"></i> Base de Datos de Usuarios</h2>
+
+            <div style="margin-bottom: 30px;">
+                <h3 style="color: #667eea; margin-bottom: 15px; border-bottom: 2px solid #667eea; padding-bottom: 8px;">
+                    <i class="fas fa-user-tie"></i> Empleados
+                </h3>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #667eea; color: white;">
+                                <th style="padding: 12px; text-align: left;">ID</th>
+                                <th style="padding: 12px; text-align: left;">Nombre</th>
+                                <th style="padding: 12px; text-align: left;">Usuario</th>
+                                <th style="padding: 12px; text-align: left;">Fecha de Creacion</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaEmpleadosBD">
+                            <tr>
+                                <td colspan="4" style="text-align: center; padding: 20px;">Cargando...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div>
+                <h3 style="color: #48bb78; margin-bottom: 15px; border-bottom: 2px solid #48bb78; padding-bottom: 8px;">
+                    <i class="fas fa-user"></i> Clientes
+                </h3>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #48bb78; color: white;">
+                                <th style="padding: 12px; text-align: left;">Telefono</th>
+                                <th style="padding: 12px; text-align: left;">Nombre</th>
+                                <th style="padding: 12px; text-align: left;">Email</th>
+                                <th style="padding: 12px; text-align: center;">Puntos</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaClientesBD">
+                            <tr>
+                                <td colspan="4" style="text-align: center; padding: 20px;">Cargando...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <button onclick="cerrarModalBaseDatosUsuarios()" class="btn-cerrar"
+                style="margin-top: 20px; width: 100%;">Cerrar</button>
         </div>
     </div>
 

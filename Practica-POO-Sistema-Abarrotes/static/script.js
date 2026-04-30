@@ -1243,6 +1243,66 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+async function mostrarBaseDatosUsuarios() {
+    document.getElementById('modalBaseDatosUsuarios').style.display = 'block';
+    await cargarEmpleadosBD();
+    await cargarClientesBD();
+}
+
+function cerrarModalBaseDatosUsuarios() {
+    document.getElementById('modalBaseDatosUsuarios').style.display = 'none';
+}
+
+async function cargarEmpleadosBD() {
+    try {
+        const response = await fetch('/api/empleados/listar');
+        const empleados = await response.json();
+        const tbody = document.getElementById('tablaEmpleadosBD');
+
+        if (empleados.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">No hay empleados registrados</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = empleados.map((e, index) => `
+            <tr style="background: ${index % 2 === 0 ? '#f8f9fa' : 'white'};">
+                <td style="padding: 12px;">${e.id}</td>
+                <td style="padding: 12px;">${escapeHtml(e.nombre)}</td>
+                <td style="padding: 12px;">${escapeHtml(e.username)}</td>
+                <td style="padding: 12px;">${e.fecha_creacion}</td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error('Error cargando empleados:', error);
+        document.getElementById('tablaEmpleadosBD').innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: #e74c3c;">Error al cargar empleados</td></tr>';
+    }
+}
+
+async function cargarClientesBD() {
+    try {
+        const response = await fetch('/api/clientes');
+        const clientes = await response.json();
+        const tbody = document.getElementById('tablaClientesBD');
+
+        if (clientes.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">No hay clientes registrados</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = clientes.map((c, index) => `
+            <tr style="background: ${index % 2 === 0 ? '#f8f9fa' : 'white'};">
+                <td style="padding: 12px;">${escapeHtml(c.telefono)}</td>
+                <td style="padding: 12px;">${escapeHtml(c.nombre)}</td>
+                <td style="padding: 12px;">${escapeHtml(c.email || 'No registrado')}</td>
+                <td style="padding: 12px; text-align: center;">${c.puntos}</td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error('Error cargando clientes:', error);
+        document.getElementById('tablaClientesBD').innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: #e74c3e;">Error al cargar clientes</td></tr>';
+    }
+}
+
 function formatearNombre(texto) {
     if (!texto) return '';
     return texto.toLowerCase().replace(/(?:^|\s)\S/g, function (letra) {
@@ -2062,6 +2122,9 @@ window.onclick = function (event) {
             }
             if (modal.id === 'modalConfirmarVaciarCarrito') {
                 document.getElementById('modalConfirmarVaciarCarrito').style.display = 'none';
+            }
+            if (modal.id === 'modalBaseDatosUsuarios') {
+                document.getElementById('modalBaseDatosUsuarios').style.display = 'none';
             }
         }
     });

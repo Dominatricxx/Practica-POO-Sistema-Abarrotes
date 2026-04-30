@@ -1613,24 +1613,26 @@ async function eliminarProductoInventario(codigoBarra) {
 let ventaActualEmpleado = null;
 let folioContadorEmpleado = 100;
 
-async function cargarInventarioEmpleado() {
+async function cargarInventarioEmpleado(categoriaFiltro) {
     try {
         const response = await fetch('/api/productos');
         const productos = await response.json();
-        mostrarInventarioEmpleado(productos);
+        mostrarInventarioEmpleado(productos, categoriaFiltro);
     } catch (error) {
         console.error('Error cargando inventario:', error);
     }
 }
 
-function mostrarInventarioEmpleado(productos) {
+function mostrarInventarioEmpleado(productos, categoriaFiltro) {
     const tbody = document.getElementById('inventarioBodyEmpleado');
     const filtro = document.getElementById('filtroInventarioEmpleado')?.value.toLowerCase() || '';
 
-    let productosFiltrados = productos.filter(p =>
-        p.nombre.toLowerCase().includes(filtro) ||
-        p.codigoBarra.toLowerCase().includes(filtro)
-    );
+    let productosFiltrados = productos.filter(p => {
+        const matchTexto = p.nombre.toLowerCase().includes(filtro) ||
+            p.codigoBarra.toLowerCase().includes(filtro);
+        const matchCategoria = !categoriaFiltro || p.categoria === categoriaFiltro;
+        return matchTexto && matchCategoria;
+    });
 
     if (productosFiltrados.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No hay productos registrados</td></tr>';
@@ -1657,7 +1659,8 @@ function mostrarInventarioEmpleado(productos) {
 }
 
 function filtrarInventarioEmpleado() {
-    cargarInventarioEmpleado();
+    const filtroCategoria = document.getElementById('filtroCategoriaInventarioEmpleado').value;
+    cargarInventarioEmpleado(filtroCategoria);
 }
 
 async function editarProductoInventarioEmpleado(codigoBarra) {

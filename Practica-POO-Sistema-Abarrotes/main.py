@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 import json
 import os
 import sqlite3
+import random
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -116,6 +117,7 @@ class DatabaseManager:
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS clientes (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                codigo_cliente TEXT UNIQUE NOT NULL,
                 telefono TEXT UNIQUE NOT NULL,
                 nombre TEXT NOT NULL,
                 apellido TEXT NOT NULL DEFAULT '',
@@ -200,7 +202,7 @@ class DatabaseManager:
     def cargar_clientes(self):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
-        cursor.execute('SELECT id, telefono, nombre, apellido, puntos, email, password, fecha_registro FROM clientes')
+        cursor.execute('SELECT id, codigo_cliente, telefono, nombre, apellido, puntos, email, password, fecha_registro FROM clientes')
         rows = cursor.fetchall()
         conn.close()
         return rows
@@ -209,9 +211,9 @@ class DatabaseManager:
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
         cursor.execute('''
-            INSERT OR REPLACE INTO clientes (id, telefono, nombre, apellido, puntos, email, password, fecha_registro)
-            VALUES ((SELECT id FROM clientes WHERE telefono = ?), ?, ?, ?, ?, ?, ?, ?)
-        ''', (cliente.telefono, cliente.telefono, cliente.nombre_cliente, cliente.apellido, cliente.puntos, cliente.email, cliente.password, cliente.fecha_registro))
+            INSERT OR REPLACE INTO clientes (id, codigo_cliente, telefono, nombre, apellido, puntos, email, password, fecha_registro)
+            VALUES ((SELECT id FROM clientes WHERE telefono = ?), ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (cliente.telefono, cliente.codigo_cliente, cliente.telefono, cliente.nombre_cliente, cliente.apellido, cliente.puntos, cliente.email, cliente.password, cliente.fecha_registro))
         conn.commit()
         conn.close()
     
@@ -326,7 +328,7 @@ class DatabaseManager:
         return resultado
 
 class Cliente:
-    def __init__(self, nombre, apellido, telefono, puntos_iniciales=0, email="", password="", fecha_registro=None):
+    def __init__(self, nombre, apellido, telefono, puntos_iniciales=0, email="", password="", fecha_registro=None, codigo_cliente=None):
         self.nombre_cliente = nombre
         self.apellido = apellido
         self.telefono = telefono
@@ -334,6 +336,10 @@ class Cliente:
         self.email = email
         self.password = password
         self.fecha_registro = fecha_registro if fecha_registro else datetime.now().strftime("%Y-%m-%d %H:%M")
+        self.codigo_cliente = codigo_cliente if codigo_cliente else self._generar_codigo_cliente()
+
+    def _generar_codigo_cliente(self):
+        return str(random.randint(100000, 999999))
 
     def acumular_puntos(self, monto_total):
         nuevos_puntos = int(monto_total // 10)
@@ -343,6 +349,7 @@ class Cliente:
     def to_dict(self):
         return {
             'id': getattr(self, 'id', None),
+            'codigo_cliente': self.codigo_cliente,
             'nombre': self.nombre_cliente,
             'apellido': self.apellido,
             'telefono': self.telefono,
@@ -490,14 +497,15 @@ class VentasController:
         rows = self.db.cargar_clientes()
         for row in rows:
             cliente_id = row[0]
-            telefono = row[1]
-            nombre = row[2]
-            apellido = row[3] if row[3] else ""
-            puntos = row[4] if len(row) > 4 else 0
-            email = row[5] if len(row) > 5 else ""
-            password = row[6] if len(row) > 6 else ""
-            fecha_registro = row[7] if len(row) > 7 else ""
-            cliente = Cliente(nombre, apellido, telefono, puntos, email, password, fecha_registro)
+            codigo_cliente = row[1]
+            telefono = row[2]
+            nombre = row[3]
+            apellido = row[4] if row[4] else ""
+            puntos = row[5] if len(row) > 5 else 0
+            email = row[6] if len(row) > 6 else ""
+            password = row[7] if len(row) > 7 else ""
+            fecha_registro = row[8] if len(row) > 8 else ""
+            cliente = Cliente(nombre, apellido, telefono, puntos, email, password, fecha_registro, codigo_cliente)
             cliente.id = cliente_id
             self.clientes[telefono] = cliente
 
@@ -777,7 +785,7 @@ async def verificar_cliente(request: Request):
         conn = sqlite3.connect("abarrotes.db")
         cursor = conn.cursor()
         cursor.execute('''
-            SELECT nombre, apellido, telefono, puntos FROM clientes 
+            SELECT nombre, apellido, telefono, puntos, codigo_cliente FROM clientes 
             WHERE email = ? AND password = ?
         ''', (email, password))
         resultado = cursor.fetchone()
@@ -789,7 +797,8 @@ async def verificar_cliente(request: Request):
                 "nombre": resultado[0],
                 "apellido": resultado[1],
                 "telefono": resultado[2],
-                "puntos": resultado[3]
+                "puntos": resultado[3],
+                "codigo_cliente": resultado[4]
             }
         else:
             return {"success": False, "message": "Email o contrasena incorrectos"}

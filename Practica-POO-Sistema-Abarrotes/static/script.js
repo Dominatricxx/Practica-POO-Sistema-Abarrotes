@@ -1467,7 +1467,7 @@ async function cargarClientesBD() {
 
         tbody.innerHTML = clientes.map((c, index) => `
             <tr style="background: ${index % 2 === 0 ? '#f8f9fa' : 'white'};">
-                <td style="padding: 12px;">${c.id || 'N/A'}</td>
+                <td style="padding: 12px;">${c.codigo_cliente || 'N/A'}</td>
                 <td style="padding: 12px;">${escapeHtml(c.nombre)}</td>
                 <td style="padding: 12px;">${escapeHtml(c.apellido || '')}</td>
                 <td style="padding: 12px;">${escapeHtml(c.email || 'No registrado')}</td>

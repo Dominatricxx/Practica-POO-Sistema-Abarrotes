@@ -348,7 +348,7 @@ class Cliente:
     
     def to_dict(self):
         return {
-            'id': getattr(self, 'id', None),
+            'id': self.codigo_cliente,
             'codigo_cliente': self.codigo_cliente,
             'nombre': self.nombre_cliente,
             'apellido': self.apellido,
@@ -818,14 +818,14 @@ async def eliminar_cliente(cliente_id: str, request: Request):
         conn = sqlite3.connect("abarrotes.db")
         cursor = conn.cursor()
         
-        cursor.execute('SELECT id FROM clientes WHERE id = ? OR codigo_cliente = ?', (cliente_id, cliente_id))
+        cursor.execute('SELECT codigo_cliente FROM clientes WHERE codigo_cliente = ?', (cliente_id,))
         cliente = cursor.fetchone()
         
         if not cliente:
             conn.close()
             raise HTTPException(status_code=404, detail="Cliente no encontrado")
         
-        cursor.execute('DELETE FROM clientes WHERE id = ? OR codigo_cliente = ?', (cliente_id, cliente_id))
+        cursor.execute('DELETE FROM clientes WHERE codigo_cliente = ?', (cliente_id,))
         conn.commit()
         conn.close()
         

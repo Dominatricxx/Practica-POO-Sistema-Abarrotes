@@ -1680,12 +1680,11 @@ async function realizarBusquedaUsuarios() {
             if (telefono && c.telefono && c.telefono.includes(telefono)) coincide = true;
 
             if (!id && !nombre && !apellido && !correo && !telefono) coincide = false;
-            else if (!id && !nombre && !apellido && !correo && !telefono) coincide = false;
 
             if (coincide) {
                 resultados.push({
                     tipo: 'Cliente',
-                    id: c.id || c.codigo_cliente,
+                    id: c.codigo_cliente,
                     nombre: c.nombre,
                     apellido: c.apellido || '',
                     correo: c.email || 'No registrado',

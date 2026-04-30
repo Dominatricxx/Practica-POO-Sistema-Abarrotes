@@ -48,6 +48,10 @@
                     </button>
                 </div>
                 <div id="loginClienteError" class="password-error"></div>
+                <button id="btnReestablecerCliente" onclick="mostrarReestablecerCliente()"
+                    style="width:100%; margin-top:12px; padding:10px; background:#e53e3e; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold; display:none;">
+                    Reestablecer Contraseña
+                </button>
                 <button onclick="cerrarModalLoginCliente(); mostrarRegistroCliente();"
                     style="width:100%; margin-top:12px; padding:10px; background:#ffd966; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">Registrarme
                     como cliente nuevo</button>
@@ -65,6 +69,25 @@
                     <input type="password" id="regClientePassword" placeholder="Contrasena" required>
                     <button type="submit">Registrarme</button>
                 </form>
+            </div>
+        </div>
+        <div id="modalReestablecerCliente" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="cerrarModalReestablecerCliente()">&times;</span>
+                <div class="password-header">
+                    <i class="fas fa-key"></i>
+                    <h2>Reestablecer Contraseña Cliente</h2>
+                </div>
+                <form id="formReestablecerCliente">
+                    <input type="email" id="reestablecerEmailCliente" placeholder="Email" required>
+                    <input type="tel" id="reestablecerTelefonoCliente" placeholder="Telefono" required>
+                    <input type="password" id="reestablecerAdminPasswordCliente"
+                        placeholder="Contraseña de administrador" required>
+                    <input type="password" id="reestablecerNuevaPasswordCliente" placeholder="Nueva contraseña"
+                        required>
+                    <button type="submit">Reestablecer Contraseña</button>
+                </form>
+                <div id="reestablecerClienteError" style="color: #e53e3e; margin-top: 10px; text-align: center;"></div>
             </div>
         </div>
         <div id="modalLoginEmpleado" class="modal">
@@ -87,6 +110,10 @@
                     </button>
                 </div>
                 <div id="loginError" class="password-error"></div>
+                <button id="btnReestablecerEmpleado" onclick="mostrarReestablecerEmpleado()"
+                    style="width:100%; margin-top:12px; padding:10px; background:#e53e3e; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold; display:none;">
+                    Reestablecer Contraseña
+                </button>
                 <button onclick="cerrarModalLoginEmpleado(); solicitarContrasena();"
                     style="width:100%; margin-top:12px; padding:10px; background:#ffd966; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">Registrar
                     nuevo empleado</button>
@@ -107,6 +134,24 @@
                     <input type="password" id="regPassword" placeholder="Contraseña" required>
                     <button type="submit">Registrar Empleado</button>
                 </form>
+            </div>
+        </div>
+        <div id="modalReestablecerEmpleado" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="cerrarModalReestablecerEmpleado()">&times;</span>
+                <div class="password-header">
+                    <i class="fas fa-key"></i>
+                    <h2>Reestablecer Contraseña Empleado</h2>
+                </div>
+                <form id="formReestablecerEmpleado">
+                    <input type="text" id="reestablecerUsernameEmpleado" placeholder="Usuario" required>
+                    <input type="password" id="reestablecerAdminPasswordEmpleado"
+                        placeholder="Contraseña de administrador" required>
+                    <input type="password" id="reestablecerNuevaPasswordEmpleado" placeholder="Nueva contraseña"
+                        required>
+                    <button type="submit">Reestablecer Contraseña</button>
+                </form>
+                <div id="reestablecerEmpleadoError" style="color: #e53e3e; margin-top: 10px; text-align: center;"></div>
             </div>
         </div>
 

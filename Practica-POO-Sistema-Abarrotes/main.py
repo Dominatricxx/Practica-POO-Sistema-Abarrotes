@@ -1126,8 +1126,37 @@ async def listar_empleados():
         for e in empleados
     ]
 
-@app.post("/api/empleados/verificar-admin")
-async def verificar_admin(request: Request):
+@app.post("/api/empleados/reestablecer-password")
+async def reestablecer_password_empleado(request: Request):
+    try:
+        data = await request.json()
+        username = data.get("username")
+        admin_password = data.get("admin_password")
+        nueva_password = data.get("nueva_password")
+        
+        if not username or not admin_password or not nueva_password:
+            raise HTTPException(status_code=400, detail="Faltan campos requeridos")
+        
+        admin_password_env = os.getenv('ADMIN_PASSWORD', 'admin123')
+        if admin_password != admin_password_env:
+            return {"success": False, "message": "Contrasena de administrador incorrecta"}
+        
+        conn = sqlite3.connect("abarrotes.db")
+        cursor = conn.cursor()
+        cursor.execute('SELECT id FROM empleados WHERE username = ?', (username,))
+        empleado = cursor.fetchone()
+        
+        if not empleado:
+            conn.close()
+            return {"success": False, "message": "Usuario no encontrado"}
+        
+        cursor.execute('UPDATE empleados SET password = ? WHERE username = ?', (nueva_password, username))
+        conn.commit()
+        conn.close()
+        
+        return {"success": True, "message": "Contrasena reestablecida exitosamente"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
     try:
         data = await request.json()
         password = data.get("password")
@@ -1137,6 +1166,39 @@ async def verificar_admin(request: Request):
             return {"success": True}
         else:
             return {"success": False, "message": "Contraseña incorrecta"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/api/clientes/reestablecer-password")
+async def reestablecer_password_cliente(request: Request):
+    try:
+        data = await request.json()
+        email = data.get("email")
+        telefono = data.get("telefono")
+        admin_password = data.get("admin_password")
+        nueva_password = data.get("nueva_password")
+        
+        if not email or not telefono or not admin_password or not nueva_password:
+            raise HTTPException(status_code=400, detail="Faltan campos requeridos")
+        
+        admin_password_env = os.getenv('ADMIN_PASSWORD', 'admin123')
+        if admin_password != admin_password_env:
+            return {"success": False, "message": "Contrasena de administrador incorrecta"}
+        
+        conn = sqlite3.connect("abarrotes.db")
+        cursor = conn.cursor()
+        cursor.execute('SELECT id FROM clientes WHERE email = ? AND telefono = ?', (email, telefono))
+        cliente = cursor.fetchone()
+        
+        if not cliente:
+            conn.close()
+            return {"success": False, "message": "Cliente no encontrado. Verifica email y telefono"}
+        
+        cursor.execute('UPDATE clientes SET password = ? WHERE email = ? AND telefono = ?', (nueva_password, email, telefono))
+        conn.commit()
+        conn.close()
+        
+        return {"success": True, "message": "Contrasena reestablecida exitosamente"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

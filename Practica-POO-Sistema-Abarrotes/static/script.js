@@ -4,6 +4,8 @@ let folioContador = 100;
 let rolActual = null;
 let productoPendiente = null;
 let productosFiltrados = [];
+let intentosFallidosEmpleado = 0;
+let intentosFallidosCliente = 0;
 
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('formProducto').addEventListener('submit', registrarProducto);
@@ -328,6 +330,8 @@ function mostrarLoginEmpleado() {
 function cerrarModalLoginEmpleado() {
     const modal = document.getElementById('modalLoginEmpleado');
     modal.style.display = 'none';
+    intentosFallidosEmpleado = 0;
+    document.getElementById('btnReestablecerEmpleado').style.display = 'none';
 }
 
 function mostrarLoginCliente() {
@@ -339,6 +343,8 @@ function mostrarLoginCliente() {
 
 function cerrarModalLoginCliente() {
     document.getElementById('modalLoginCliente').style.display = 'none';
+    intentosFallidosCliente = 0;
+    document.getElementById('btnReestablecerCliente').style.display = 'none';
 }
 
 function verificarLoginCliente() {
@@ -358,6 +364,8 @@ function verificarLoginCliente() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
+                intentosFallidosCliente = 0;
+                document.getElementById('btnReestablecerCliente').style.display = 'none';
                 cerrarModalLoginCliente();
                 const nombreCompleto = formatearNombre(data.nombre + ' ' + (data.apellido || ''));
                 const primerNombre = nombreCompleto.split(' ')[0];
@@ -367,8 +375,12 @@ function verificarLoginCliente() {
                 document.getElementById('rolActual').style.display = 'block';
                 seleccionarRol('cliente');
             } else {
+                intentosFallidosCliente++;
                 document.getElementById('loginClienteError').innerHTML = data.message || 'Email o contrasena incorrectos';
                 document.getElementById('loginClientePassword').value = '';
+                if (intentosFallidosCliente >= 3) {
+                    document.getElementById('btnReestablecerCliente').style.display = 'block';
+                }
             }
         })
         .catch(error => {
@@ -404,14 +416,20 @@ function verificarLoginEmpleado() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
+                intentosFallidosEmpleado = 0;
+                document.getElementById('btnReestablecerEmpleado').style.display = 'none';
                 cerrarModalLoginEmpleado();
                 const nombreCompleto = formatearNombre(data.nombre);
                 const primerNombre = nombreCompleto.split(' ')[0];
                 document.getElementById('rolActual').innerHTML = '<i class="fas fa-user-tie"></i> Empleado: ' + primerNombre + ' | Modo Administracion';
                 seleccionarRol('empleado');
             } else {
+                intentosFallidosEmpleado++;
                 document.getElementById('loginError').innerHTML = data.message || 'Usuario o contraseña incorrectos';
                 document.getElementById('loginPassword').value = '';
+                if (intentosFallidosEmpleado >= 3) {
+                    document.getElementById('btnReestablecerEmpleado').style.display = 'block';
+                }
             }
         })
         .catch(error => {
@@ -1243,6 +1261,106 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+
+function mostrarReestablecerEmpleado() {
+    cerrarModalLoginEmpleado();
+    document.getElementById('modalReestablecerEmpleado').style.display = 'block';
+    document.getElementById('formReestablecerEmpleado').reset();
+    document.getElementById('reestablecerEmpleadoError').innerHTML = '';
+}
+
+function cerrarModalReestablecerEmpleado() {
+    document.getElementById('modalReestablecerEmpleado').style.display = 'none';
+    intentosFallidosEmpleado = 0;
+    document.getElementById('btnReestablecerEmpleado').style.display = 'none';
+}
+
+document.getElementById('formReestablecerEmpleado').addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    const username = document.getElementById('reestablecerUsernameEmpleado').value;
+    const adminPassword = document.getElementById('reestablecerAdminPasswordEmpleado').value;
+    const nuevaPassword = document.getElementById('reestablecerNuevaPasswordEmpleado').value;
+
+    if (!username || !adminPassword || !nuevaPassword) {
+        document.getElementById('reestablecerEmpleadoError').innerHTML = 'Completa todos los campos';
+        return;
+    }
+
+    fetch('/api/empleados/reestablecer-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            username: username,
+            admin_password: adminPassword,
+            nueva_password: nuevaPassword
+        })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                mostrarNotificacion('Contrasena reestablecida exitosamente', 'success');
+                cerrarModalReestablecerEmpleado();
+                mostrarLoginEmpleado();
+            } else {
+                document.getElementById('reestablecerEmpleadoError').innerHTML = data.message || 'Error al reestablecer';
+            }
+        })
+        .catch(error => {
+            document.getElementById('reestablecerEmpleadoError').innerHTML = 'Error al procesar la solicitud';
+        });
+});
+
+function mostrarReestablecerCliente() {
+    cerrarModalLoginCliente();
+    document.getElementById('modalReestablecerCliente').style.display = 'block';
+    document.getElementById('formReestablecerCliente').reset();
+    document.getElementById('reestablecerClienteError').innerHTML = '';
+}
+
+function cerrarModalReestablecerCliente() {
+    document.getElementById('modalReestablecerCliente').style.display = 'none';
+    intentosFallidosCliente = 0;
+    document.getElementById('btnReestablecerCliente').style.display = 'none';
+}
+
+document.getElementById('formReestablecerCliente').addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    const email = document.getElementById('reestablecerEmailCliente').value;
+    const telefono = document.getElementById('reestablecerTelefonoCliente').value;
+    const adminPassword = document.getElementById('reestablecerAdminPasswordCliente').value;
+    const nuevaPassword = document.getElementById('reestablecerNuevaPasswordCliente').value;
+
+    if (!email || !telefono || !adminPassword || !nuevaPassword) {
+        document.getElementById('reestablecerClienteError').innerHTML = 'Completa todos los campos';
+        return;
+    }
+
+    fetch('/api/clientes/reestablecer-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            email: email,
+            telefono: telefono,
+            admin_password: adminPassword,
+            nueva_password: nuevaPassword
+        })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                mostrarNotificacion('Contrasena reestablecida exitosamente', 'success');
+                cerrarModalReestablecerCliente();
+                mostrarLoginCliente();
+            } else {
+                document.getElementById('reestablecerClienteError').innerHTML = data.message || 'Error al reestablecer';
+            }
+        })
+        .catch(error => {
+            document.getElementById('reestablecerClienteError').innerHTML = 'Error al procesar la solicitud';
+        });
+});
 
 async function mostrarBaseDatosUsuarios() {
     document.getElementById('modalBaseDatosUsuarios').style.display = 'block';

@@ -305,7 +305,6 @@ function seleccionarRol(rol) {
         document.getElementById('mainContentCliente').style.display = 'grid';
         document.getElementById('mainContentEmpleado').style.display = 'none';
         document.getElementById('btnAgregarProducto').style.display = 'none';
-        document.getElementById('btnNuevoCliente').style.display = 'none';
         document.getElementById('descuentoSection').style.display = 'none';
         cargarProductos();
         cargarClientes();
@@ -710,10 +709,40 @@ async function cargarClientes() {
         const select = document.getElementById('clienteSelect');
         const clienteActual = select.value;
 
-        select.innerHTML = '<option value="">Público General</option>' +
-            clientes.map(cliente => `<option value="${cliente.telefono}" ${clienteActual === cliente.telefono ? 'selected' : ''}>
-                ${escapeHtml(cliente.nombre)} (${cliente.puntos} pts)
-            </option>`).join('');
+        const textoRolActual = document.getElementById('rolActual').textContent || document.getElementById('rolActual').innerText || '';
+        const esCliente = textoRolActual.includes('Cliente');
+        let clienteNombre = '';
+        let clienteTelefono = '';
+
+        if (esCliente) {
+            const partes = textoRolActual.replace('Cliente ', '').trim().split(' ');
+            clienteNombre = partes.join(' ');
+            const clienteEncontrado = clientes.find(c => {
+                const nombreCompleto = (c.nombre + ' ' + (c.apellido || '')).trim();
+                return nombreCompleto.toLowerCase() === clienteNombre.toLowerCase();
+            });
+            if (clienteEncontrado) {
+                clienteTelefono = clienteEncontrado.telefono;
+            }
+        }
+
+        select.innerHTML = '';
+
+        if (esCliente && clienteTelefono) {
+            const clienteSeleccionado = clientes.find(c => c.telefono === clienteTelefono);
+            if (clienteSeleccionado) {
+                select.innerHTML = `<option value="${clienteSeleccionado.telefono}" selected>
+                    ${escapeHtml(clienteSeleccionado.nombre)} (${clienteSeleccionado.puntos} pts)
+                </option>`;
+                select.disabled = true;
+            }
+        } else {
+            select.innerHTML = '<option value="">Publico General</option>' +
+                clientes.map(cliente => `<option value="${cliente.telefono}" ${clienteActual === cliente.telefono ? 'selected' : ''}>
+                    ${escapeHtml(cliente.nombre)} (${cliente.puntos} pts)
+                </option>`).join('');
+            select.disabled = false;
+        }
     } catch (error) {
         console.error('Error cargando clientes:', error);
     }
@@ -2266,8 +2295,9 @@ window.onclick = function (event) {
 }
 
 document.getElementById('clienteSelect').addEventListener('change', async function () {
+    if (this.disabled) return;
     if (ventaActual && ventaActual.carrito && ventaActual.carrito.length > 0) {
-        const confirmar = confirm('Cambiar de cliente reiniciará la venta actual. ¿Continuar?');
+        const confirmar = confirm('Cambiar de cliente reiniciara la venta actual. Continuar?');
         if (!confirmar) {
             this.value = ventaActual.cliente?.telefono || '';
             return;

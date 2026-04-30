@@ -556,24 +556,44 @@ async function nuevaVenta() {
 }
 
 async function agregarAlCarrito(codigoBarra) {
-    const producto = productos.find(p => p.codigoBarra === codigoBarra);
-    if (!producto) {
-        mostrarNotificacion('Producto no encontrado', 'error');
-        return;
+    try {
+        const response = await fetch('/api/productos');
+        const productosActualizados = await response.json();
+        const producto = productosActualizados.find(p => p.codigoBarra === codigoBarra);
+
+        if (!producto) {
+            mostrarNotificacion('Producto no encontrado', 'error');
+            return;
+        }
+
+        productoPendiente = producto;
+
+        const mensaje = producto.tipo === 'ProductoUnitario'
+            ? `¿Cuántas unidades de ${producto.nombre} deseas agregar?`
+            : `¿Cuántos kilos/gramos de ${producto.nombre} deseas agregar?`;
+
+        document.getElementById('mensajeCantidad').textContent = mensaje;
+        document.getElementById('inputCantidad').value = '1';
+        document.getElementById('inputCantidad').step = producto.tipo === 'ProductoUnitario' ? '1' : '0.1';
+        document.getElementById('modalCantidad').style.display = 'block';
+        document.getElementById('inputCantidad').focus();
+    } catch (error) {
+        console.error('Error:', error);
+        mostrarNotificacion('Error al cargar producto', 'error');
     }
-
-    productoPendiente = producto;
-
-    const mensaje = producto.tipo === 'ProductoUnitario'
-        ? `¿Cuántas unidades de ${producto.nombre} deseas agregar?`
-        : `¿Cuántos kilos/gramos de ${producto.nombre} deseas agregar?`;
-
-    document.getElementById('mensajeCantidad').textContent = mensaje;
-    document.getElementById('inputCantidad').value = '1';
-    document.getElementById('inputCantidad').step = producto.tipo === 'ProductoUnitario' ? '1' : '0.1';
-    document.getElementById('modalCantidad').style.display = 'block';
-    document.getElementById('inputCantidad').focus();
 }
+
+productoPendiente = producto;
+
+const mensaje = producto.tipo === 'ProductoUnitario'
+    ? `¿Cuántas unidades de ${producto.nombre} deseas agregar?`
+    : `¿Cuántos kilos/gramos de ${producto.nombre} deseas agregar?`;
+
+document.getElementById('mensajeCantidad').textContent = mensaje;
+document.getElementById('inputCantidad').value = '1';
+document.getElementById('inputCantidad').step = producto.tipo === 'ProductoUnitario' ? '1' : '0.1';
+document.getElementById('modalCantidad').style.display = 'block';
+document.getElementById('inputCantidad').focus();
 
 function cerrarModalCantidad() {
     document.getElementById('modalCantidad').style.display = 'none';
@@ -594,13 +614,8 @@ async function confirmarCantidad() {
         return;
     }
 
-    if (cantidad > productoPendiente.stock) {
-        mostrarNotificacion(`Stock insuficiente. Solo hay ${productoPendiente.stock} disponibles`, 'error');
-        cerrarModalCantidad();
-        return;
-    }
-
-    const codigoBarra = productoPendiente.codigoBarra;
+    const productoActual = productoPendiente;
+    const codigoBarra = productoActual.codigoBarra;
     cerrarModalCantidad();
 
     const item = {
@@ -619,18 +634,26 @@ async function confirmarCantidad() {
 
         if (result.error) {
             mostrarNotificacion(result.error, 'error');
-        } else {
-            if (result.alertas && result.alertas.length > 0) {
-                result.alertas.forEach(alerta => mostrarNotificacion(alerta, 'warning'));
-            }
-            ventaActual.carrito = result.carrito_actual;
-            await recalcularTotales();
+            productoPendiente = null;
+            return;
+        }
+
+        if (result.alertas && result.alertas.length > 0) {
+            result.alertas.forEach(alerta => mostrarNotificacion(alerta, 'warning'));
+        }
+
+        const ventaResponse = await fetch('/api/ventas/actual');
+        ventaActual = await ventaResponse.json();
+
+        if (ventaActual.carrito) {
             actualizarCarrito();
             await cargarProductos();
-            mostrarNotificacion(`${productoPendiente.nombre} agregado al carrito`, 'success');
+            mostrarNotificacion(`${productoActual.nombre} agregado al carrito`, 'success');
+        } else {
+            mostrarNotificacion('Producto agregado', 'success');
         }
     } catch (error) {
-        console.error('Error agregando al carrito:', error);
+        console.error('Error:', error);
         mostrarNotificacion('Error al agregar producto', 'error');
     }
 
@@ -653,7 +676,7 @@ async function recalcularTotales() {
 function actualizarCarrito() {
     const carritoDiv = document.getElementById('carritoItems');
 
-    if (!ventaActual.carrito || ventaActual.carrito.length === 0) {
+    if (!ventaActual || !ventaActual.carrito || ventaActual.carrito.length === 0) {
         carritoDiv.innerHTML = '<div class="carrito-vacio">Agrega productos al carrito</div>';
         document.getElementById('subtotal').textContent = '$0.00';
         document.getElementById('impuestos').textContent = '$0.00';
@@ -662,7 +685,13 @@ function actualizarCarrito() {
         return;
     }
 
-    carritoDiv.innerHTML = ventaActual.carrito.map((item, index) => `
+    let subtotal = 0;
+    let impuestos = 0;
+
+    carritoDiv.innerHTML = ventaActual.carrito.map((item, index) => {
+        subtotal += item.subtotal_detalle;
+        impuestos += (item.impuesto_detalle || 0);
+        return `
         <div class="carrito-item">
             <div class="item-info">
                 <strong>${escapeHtml(item.producto.nombre)}</strong>
@@ -675,7 +704,11 @@ function actualizarCarrito() {
                 $${item.subtotal_detalle.toFixed(2)}
             </div>
         </div>
-    `).join('');
+    `}).join('');
+
+    ventaActual.subtotal = subtotal;
+    ventaActual.impuestos = impuestos;
+    ventaActual.total = subtotal + impuestos - (ventaActual.descuento || 0);
 
     document.getElementById('subtotal').textContent = `$${ventaActual.subtotal.toFixed(2)}`;
     document.getElementById('impuestos').textContent = `$${ventaActual.impuestos.toFixed(2)}`;

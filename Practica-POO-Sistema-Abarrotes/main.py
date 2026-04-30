@@ -508,7 +508,6 @@ class VentasController:
             'descuento': 0.0
         }
         return self.venta_actual
-
     def agregar_item(self, codigo, cantidad):
         producto = self.inventario.buscar(codigo)
         if not producto:
@@ -792,7 +791,15 @@ async def nueva_venta(request: Request):
 @app.post("/api/ventas/agregar-item")
 async def agregar_item_venta(item: ItemVenta):
     resultado = ctrl_ventas.agregar_item(item.codigoBarra, item.cantidad)
-    return resultado
+    if "error" in resultado:
+        return {"error": resultado["error"]}
+    return {
+        "success": True,
+        "producto": resultado["producto"],
+        "cantidad": resultado["cantidad"],
+        "alertas": resultado["alertas"],
+        "carrito_actual": resultado["carrito_actual"]
+    }
 
 @app.post("/api/ventas/descuento")
 async def aplicar_descuento(descuento: AplicarDescuento):

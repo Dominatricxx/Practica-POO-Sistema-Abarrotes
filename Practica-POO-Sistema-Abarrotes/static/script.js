@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const nombre = formatearNombre(document.getElementById('regClienteNombre').value);
         const apellido = formatearNombre(document.getElementById('regClienteApellido').value);
-        const email = document.getElementById('regClienteEmail').value;
+        const email = obtenerEmailCompleto('regClienteEmail', 'btnDominioRegistro');
         const telefono = document.getElementById('regClienteTelefono').value;
         const password = document.getElementById('regClientePassword').value;
 
@@ -265,6 +265,33 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('modalConfirmarCerrarSesion').style.display = 'none';
         });
     }
+
+    document.addEventListener('click', function (event) {
+        if (!event.target.closest('[id^="btnDominio"]') && !event.target.closest('[id^="dropdownDominio"]')) {
+            document.querySelectorAll('[id^="dropdownDominio"]').forEach(d => d.style.display = 'none');
+        }
+    });
+
+    const loginClienteEmailInput = document.getElementById('loginClienteEmail');
+    if (loginClienteEmailInput) {
+        loginClienteEmailInput.addEventListener('input', function () {
+            this.value = this.value.replace(/@/g, '');
+        });
+    }
+
+    const regClienteEmailInput = document.getElementById('regClienteEmail');
+    if (regClienteEmailInput) {
+        regClienteEmailInput.addEventListener('input', function () {
+            this.value = this.value.replace(/@/g, '');
+        });
+    }
+
+    const reestablecerEmailClienteInput = document.getElementById('reestablecerEmailCliente');
+    if (reestablecerEmailClienteInput) {
+        reestablecerEmailClienteInput.addEventListener('input', function () {
+            this.value = this.value.replace(/@/g, '');
+        });
+    }
 });
 
 
@@ -348,8 +375,7 @@ function cerrarModalLoginCliente() {
 }
 
 function verificarLoginCliente() {
-    const email = document.getElementById('loginClienteEmail').value;
-    const password = document.getElementById('loginClientePassword').value;
+    const email = obtenerEmailCompleto('loginClienteEmail', 'btnDominioLogin'); const password = document.getElementById('loginClientePassword').value;
 
     if (!email || !password) {
         document.getElementById('loginClienteError').innerHTML = 'Por favor ingresa email y contrasena';
@@ -1262,6 +1288,36 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+function toggleDropdownDominio(dropdownId) {
+    const dropdown = document.getElementById(dropdownId);
+    if (!dropdown) return;
+    if (dropdown.style.display === 'block') {
+        dropdown.style.display = 'none';
+    } else {
+        document.querySelectorAll('[id^="dropdownDominio"]').forEach(d => d.style.display = 'none');
+        dropdown.style.display = 'block';
+    }
+}
+
+function seleccionarDominio(btnId, dropdownId, dominio) {
+    const btn = document.getElementById(btnId);
+    const dropdown = document.getElementById(dropdownId);
+    if (!btn || !dropdown) return;
+    btn.innerHTML = dominio + ' <i class="fas fa-chevron-down" style="float: right; margin-top: 2px;"></i>';
+    dropdown.style.display = 'none';
+}
+
+function obtenerEmailCompleto(inputId, btnId) {
+    const input = document.getElementById(inputId);
+    const btn = document.getElementById(btnId);
+    if (!input || !btn) return '';
+    const usuario = input.value.trim();
+    const btnTexto = btn.textContent.trim();
+    const dominio = btnTexto.split(' ')[0];
+    if (!usuario) return '';
+    return usuario + dominio;
+}
+
 function mostrarReestablecerEmpleado() {
     cerrarModalLoginEmpleado();
     document.getElementById('modalReestablecerEmpleado').style.display = 'block';
@@ -1327,7 +1383,7 @@ function cerrarModalReestablecerCliente() {
 document.getElementById('formReestablecerCliente').addEventListener('submit', function (e) {
     e.preventDefault();
 
-    const email = document.getElementById('reestablecerEmailCliente').value;
+    const email = obtenerEmailCompleto('reestablecerEmailCliente', 'btnDominioReestablecer');
     const telefono = document.getElementById('reestablecerTelefonoCliente').value;
     const adminPassword = document.getElementById('reestablecerAdminPasswordCliente').value;
     const nuevaPassword = document.getElementById('reestablecerNuevaPasswordCliente').value;

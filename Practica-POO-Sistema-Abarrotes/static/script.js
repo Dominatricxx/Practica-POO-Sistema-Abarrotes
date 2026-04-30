@@ -41,9 +41,11 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    mostrarNotificacion('Cliente registrado exitosamente. Ahora inicia sesion.', 'success');
+                    mostrarNotificacion('Cliente registrado exitosamente', 'success');
                     cerrarModalRegistroCliente();
-                    mostrarLoginCliente();
+                    if (document.getElementById('modalBaseDatosUsuarios').style.display === 'block') {
+                        cargarClientesBD();
+                    }
                 } else {
                     mostrarNotificacion('Error al registrar cliente', 'error');
                 }
@@ -77,6 +79,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.success) {
                     mostrarNotificacion('Empleado registrado exitosamente', 'success');
                     cerrarModalRegistroEmpleado();
+                    if (document.getElementById('modalBaseDatosUsuarios').style.display === 'block') {
+                        cargarEmpleadosBD();
+                    }
                 } else {
                     mostrarNotificacion('Error: ' + data.detail, 'error');
                 }
@@ -288,8 +293,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-
-
 function seleccionarRol(rol) {
     rolActual = rol;
     document.getElementById('menuInicial').style.display = 'none';
@@ -362,6 +365,17 @@ function mostrarLoginCliente() {
     document.getElementById('loginClienteError').innerHTML = '';
 }
 
+function mostrarRegistroCliente() {
+    var modalBaseDatos = document.getElementById('modalBaseDatosUsuarios');
+    if (modalBaseDatos && modalBaseDatos.style.display === 'block') {
+        modalBaseDatos.style.display = 'none';
+    }
+    setTimeout(function () {
+        document.getElementById('modalRegistroCliente').style.display = 'block';
+        document.getElementById('formRegistroCliente').reset();
+    }, 300);
+}
+
 function cerrarModalLoginCliente() {
     document.getElementById('modalLoginCliente').style.display = 'none';
     intentosFallidosCliente = 0;
@@ -411,14 +425,12 @@ function verificarLoginCliente() {
         });
 }
 
-function mostrarRegistroCliente() {
-    document.getElementById('modalLoginCliente').style.display = 'none';
-    document.getElementById('modalRegistroCliente').style.display = 'block';
-    document.getElementById('formRegistroCliente').reset();
-}
-
 function cerrarModalRegistroCliente() {
     document.getElementById('modalRegistroCliente').style.display = 'none';
+    var modalBaseDatos = document.getElementById('modalBaseDatosUsuarios');
+    if (modalBaseDatos && modalBaseDatos.style.display !== 'block') {
+        modalBaseDatos.style.display = 'block';
+    }
 }
 
 function verificarLoginEmpleado() {
@@ -1499,24 +1511,31 @@ function cerrarModalOpcionesAgregarUsuario() {
 }
 
 function solicitarPasswordAdminParaRegistro(tipo) {
+    console.log('PASO 1: solicitarPasswordAdminParaRegistro llamado con tipo:', tipo);
     cerrarModalOpcionesAgregarUsuario();
     tipoUsuarioARegistrar = tipo;
-    document.getElementById('modalPasswordAdminRegistro').style.display = 'block';
-    document.getElementById('passwordAdminRegistro').value = '';
-    document.getElementById('passwordAdminRegistroError').innerHTML = '';
-}
-
-function cerrarModalPasswordAdminRegistro() {
-    document.getElementById('modalPasswordAdminRegistro').style.display = 'none';
-    tipoUsuarioARegistrar = null;
+    console.log('PASO 2: tipoUsuarioARegistrar guardado:', tipoUsuarioARegistrar);
+    var modalPasswordAdmin = document.getElementById('modalPasswordAdminRegistro');
+    console.log('PASO 3: modalPasswordAdminRegistro encontrado:', modalPasswordAdmin);
+    if (modalPasswordAdmin) {
+        modalPasswordAdmin.style.display = 'block';
+        document.getElementById('passwordAdminRegistro').value = '';
+        document.getElementById('passwordAdminRegistroError').innerHTML = '';
+        console.log('PASO 4: modal mostrado correctamente');
+    } else {
+        console.log('ERROR: No se encontro modalPasswordAdminRegistro');
+    }
 }
 
 function verificarPasswordAdminRegistro() {
+    console.log('PASO 5: verificarPasswordAdminRegistro llamado');
+    console.log('PASO 6: tipoUsuarioARegistrar actual:', tipoUsuarioARegistrar);
     const password = document.getElementById('passwordAdminRegistro').value;
     if (!password) {
         document.getElementById('passwordAdminRegistroError').innerHTML = 'Ingresa la contrasena de administrador';
         return;
     }
+    console.log('PASO 7: Enviando fetch a /api/empleados/verificar-admin');
     fetch('/api/empleados/verificar-admin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1524,20 +1543,43 @@ function verificarPasswordAdminRegistro() {
     })
         .then(response => response.json())
         .then(data => {
+            console.log('PASO 8: Respuesta del servidor:', data);
             if (data.success) {
-                cerrarModalPasswordAdminRegistro();
-                if (tipoUsuarioARegistrar === 'empleado') {
-                    mostrarRegistroEmpleado();
-                } else if (tipoUsuarioARegistrar === 'cliente') {
-                    mostrarRegistroCliente();
-                }
+                var tipoGuardado = tipoUsuarioARegistrar;
+                console.log('PASO 9: Autenticacion exitosa, tipoGuardado:', tipoGuardado);
+                document.getElementById('modalPasswordAdminRegistro').style.display = 'none';
+                document.getElementById('modalOpcionesAgregarUsuario').style.display = 'none';
                 tipoUsuarioARegistrar = null;
+                console.log('PASO 10: Modales cerrados, preparando apertura en 300ms');
+                setTimeout(function () {
+                    if (tipoGuardado === 'empleado') {
+                        console.log('PASO 11: Intentando abrir modalRegistroEmpleado');
+                        var modalEmp = document.getElementById('modalRegistroEmpleado');
+                        console.log('PASO 12: modalRegistroEmpleado encontrado:', modalEmp);
+                        if (modalEmp) {
+                            modalEmp.style.display = 'block';
+                            document.getElementById('formRegistroEmpleado').reset();
+                            console.log('PASO 13: modalRegistroEmpleado abierto');
+                        }
+                    } else if (tipoGuardado === 'cliente') {
+                        console.log('PASO 11: Intentando abrir modalRegistroCliente');
+                        var modalCli = document.getElementById('modalRegistroCliente');
+                        console.log('PASO 12: modalRegistroCliente encontrado:', modalCli);
+                        if (modalCli) {
+                            modalCli.style.display = 'block';
+                            document.getElementById('formRegistroCliente').reset();
+                            console.log('PASO 13: modalRegistroCliente abierto');
+                        }
+                    }
+                }, 300);
             } else {
+                console.log('ERROR: Contrasena incorrecta');
                 document.getElementById('passwordAdminRegistroError').innerHTML = 'Contrasena incorrecta';
                 document.getElementById('passwordAdminRegistro').value = '';
             }
         })
         .catch(error => {
+            console.log('ERROR en fetch:', error);
             document.getElementById('passwordAdminRegistroError').innerHTML = 'Error al verificar';
         });
 }
@@ -2594,6 +2636,9 @@ window.onclick = function (event) {
             }
             if (modal.id === 'modalRegistroCliente') {
                 document.getElementById('formRegistroCliente').reset();
+            }
+            if (modal.id === 'modalRegistroEmpleado') {
+                document.getElementById('formRegistroEmpleado').reset();
             }
             if (modal.id === 'modalConfirmarVaciarCarrito') {
                 document.getElementById('modalConfirmarVaciarCarrito').style.display = 'none';

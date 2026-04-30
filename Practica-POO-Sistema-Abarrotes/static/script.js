@@ -27,7 +27,8 @@ document.addEventListener('DOMContentLoaded', () => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                nombre: nombre + ' ' + apellido,
+                nombre: nombre,
+                apellido: apellido,
                 telefono: telefono,
                 email: email,
                 password: password,
@@ -66,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fetch('/api/empleados/registrar', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nombre: nombre + ' ' + apellido, username: username, password: password })
+            body: JSON.stringify({ nombre: nombre, apellido: apellido, username: username, password: password })
         })
             .then(response => response.json())
             .then(data => {
@@ -358,7 +359,7 @@ function verificarLoginCliente() {
         .then(data => {
             if (data.success) {
                 cerrarModalLoginCliente();
-                const nombreCompleto = formatearNombre(data.nombre);
+                const nombreCompleto = formatearNombre(data.nombre + ' ' + (data.apellido || ''));
                 const primerNombre = nombreCompleto.split(' ')[0];
                 document.getElementById('rolActual').innerHTML = '<i class="fas fa-user"></i> Cliente ' + nombreCompleto;
                 document.getElementById('saludoCliente').innerHTML = '<i class="fas fa-user"></i> Hola ' + primerNombre;
@@ -480,7 +481,7 @@ document.getElementById('formRegistroEmpleado').addEventListener('submit', funct
     fetch('/api/empleados/registrar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre: nombre + ' ' + apellido, username: username, password: password })
+        body: JSON.stringify({ nombre: nombre, apellido: apellido, username: username, password: password })
     })
         .then(response => response.json())
         .then(data => {
@@ -1260,7 +1261,7 @@ async function cargarEmpleadosBD() {
         const tbody = document.getElementById('tablaEmpleadosBD');
 
         if (empleados.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">No hay empleados registrados</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px;">No hay empleados registrados</td></tr>';
             return;
         }
 
@@ -1268,13 +1269,14 @@ async function cargarEmpleadosBD() {
             <tr style="background: ${index % 2 === 0 ? '#f8f9fa' : 'white'};">
                 <td style="padding: 12px;">${e.id}</td>
                 <td style="padding: 12px;">${escapeHtml(e.nombre)}</td>
+                <td style="padding: 12px;">${escapeHtml(e.apellido)}</td>
                 <td style="padding: 12px;">${escapeHtml(e.username)}</td>
                 <td style="padding: 12px;">${e.fecha_creacion}</td>
             </tr>
         `).join('');
     } catch (error) {
         console.error('Error cargando empleados:', error);
-        document.getElementById('tablaEmpleadosBD').innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: #e74c3c;">Error al cargar empleados</td></tr>';
+        document.getElementById('tablaEmpleadosBD').innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px; color: #e74c3c;">Error al cargar empleados</td></tr>';
     }
 }
 
@@ -1285,21 +1287,24 @@ async function cargarClientesBD() {
         const tbody = document.getElementById('tablaClientesBD');
 
         if (clientes.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">No hay clientes registrados</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px;">No hay clientes registrados</td></tr>';
             return;
         }
 
         tbody.innerHTML = clientes.map((c, index) => `
             <tr style="background: ${index % 2 === 0 ? '#f8f9fa' : 'white'};">
-                <td style="padding: 12px;">${escapeHtml(c.telefono)}</td>
+                <td style="padding: 12px;">${c.id || 'N/A'}</td>
                 <td style="padding: 12px;">${escapeHtml(c.nombre)}</td>
+                <td style="padding: 12px;">${escapeHtml(c.apellido || '')}</td>
                 <td style="padding: 12px;">${escapeHtml(c.email || 'No registrado')}</td>
+                <td style="padding: 12px;">${escapeHtml(c.telefono)}</td>
                 <td style="padding: 12px; text-align: center;">${c.puntos}</td>
+                <td style="padding: 12px;">${c.fecha_registro || 'No disponible'}</td>
             </tr>
         `).join('');
     } catch (error) {
         console.error('Error cargando clientes:', error);
-        document.getElementById('tablaClientesBD').innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: #e74c3e;">Error al cargar clientes</td></tr>';
+        document.getElementById('tablaClientesBD').innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px; color: #e74c3c;">Error al cargar clientes</td></tr>';
     }
 }
 

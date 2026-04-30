@@ -115,11 +115,14 @@ class DatabaseManager:
         
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS clientes (
-                telefono TEXT PRIMARY KEY,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                telefono TEXT UNIQUE NOT NULL,
                 nombre TEXT NOT NULL,
+                apellido TEXT NOT NULL DEFAULT '',
                 puntos INTEGER DEFAULT 0,
                 email TEXT,
-                password TEXT
+                password TEXT,
+                fecha_registro TEXT NOT NULL DEFAULT ''
             )
         ''')
         
@@ -156,6 +159,7 @@ class DatabaseManager:
             CREATE TABLE IF NOT EXISTS empleados (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 nombre TEXT NOT NULL,
+                apellido TEXT NOT NULL DEFAULT '',
                 username TEXT UNIQUE NOT NULL,
                 password TEXT NOT NULL,
                 fecha_creacion TEXT NOT NULL
@@ -196,7 +200,7 @@ class DatabaseManager:
     def cargar_clientes(self):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
-        cursor.execute('SELECT * FROM clientes')
+        cursor.execute('SELECT id, telefono, nombre, apellido, puntos, email, password, fecha_registro FROM clientes')
         rows = cursor.fetchall()
         conn.close()
         return rows
@@ -205,9 +209,9 @@ class DatabaseManager:
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
         cursor.execute('''
-            INSERT OR REPLACE INTO clientes (telefono, nombre, puntos, email, password)
-            VALUES (?, ?, ?, ?, ?)
-        ''', (cliente.telefono, cliente.nombre_cliente, cliente.puntos, cliente.email, cliente.password))
+            INSERT OR REPLACE INTO clientes (id, telefono, nombre, apellido, puntos, email, password, fecha_registro)
+            VALUES ((SELECT id FROM clientes WHERE telefono = ?), ?, ?, ?, ?, ?, ?, ?)
+        ''', (cliente.telefono, cliente.telefono, cliente.nombre_cliente, cliente.apellido, cliente.puntos, cliente.email, cliente.password, cliente.fecha_registro))
         conn.commit()
         conn.close()
     
@@ -238,13 +242,13 @@ class DatabaseManager:
         conn.close()
         return venta_id
     
-    def guardar_empleado(self, nombre, username, password):
+    def guardar_empleado(self, nombre, apellido, username, password):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
         cursor.execute('''
-            INSERT INTO empleados (nombre, username, password, fecha_creacion)
-            VALUES (?, ?, ?, ?)
-        ''', (nombre, username, password, datetime.now().isoformat()))
+            INSERT INTO empleados (nombre, apellido, username, password, fecha_creacion)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (nombre, apellido, username, password, datetime.now().isoformat()))
         conn.commit()
         conn.close()
         return True
@@ -253,17 +257,19 @@ class DatabaseManager:
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
         cursor.execute('''
-            SELECT id, nombre FROM empleados 
+            SELECT id, nombre, apellido FROM empleados 
             WHERE username = ? AND password = ?
         ''', (username, password))
         resultado = cursor.fetchone()
         conn.close()
-        return resultado is not None, resultado[1] if resultado else None
+        if resultado:
+            return True, resultado[1], resultado[2]
+        return False, None, None
     
     def listar_empleados(self):
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
-        cursor.execute('SELECT id, nombre, username, fecha_creacion FROM empleados')
+        cursor.execute('SELECT id, nombre, apellido, username, fecha_creacion FROM empleados')
         empleados = cursor.fetchall()
         conn.close()
         return empleados
@@ -320,12 +326,14 @@ class DatabaseManager:
         return resultado
 
 class Cliente:
-    def __init__(self, nombre, telefono, puntos_iniciales=0, email="", password=""):
+    def __init__(self, nombre, apellido, telefono, puntos_iniciales=0, email="", password="", fecha_registro=None):
         self.nombre_cliente = nombre
+        self.apellido = apellido
         self.telefono = telefono
         self.puntos = puntos_iniciales
         self.email = email
         self.password = password
+        self.fecha_registro = fecha_registro if fecha_registro else datetime.now().strftime("%Y-%m-%d %H:%M")
 
     def acumular_puntos(self, monto_total):
         nuevos_puntos = int(monto_total // 10)
@@ -334,10 +342,13 @@ class Cliente:
     
     def to_dict(self):
         return {
+            'id': getattr(self, 'id', None),
             'nombre': self.nombre_cliente,
+            'apellido': self.apellido,
             'telefono': self.telefono,
             'puntos': self.puntos,
-            'email': self.email
+            'email': self.email,
+            'fecha_registro': self.fecha_registro
         }
 
 class Producto(ABC):
@@ -478,13 +489,20 @@ class VentasController:
     def cargar_clientes_desde_bd(self):
         rows = self.db.cargar_clientes()
         for row in rows:
-            email = row[3] if len(row) > 3 else ""
-            password = row[4] if len(row) > 4 else ""
-            cliente = Cliente(row[1], row[0], row[2], email, password)
-            self.clientes[row[0]] = cliente
+            cliente_id = row[0]
+            telefono = row[1]
+            nombre = row[2]
+            apellido = row[3] if row[3] else ""
+            puntos = row[4] if len(row) > 4 else 0
+            email = row[5] if len(row) > 5 else ""
+            password = row[6] if len(row) > 6 else ""
+            fecha_registro = row[7] if len(row) > 7 else ""
+            cliente = Cliente(nombre, apellido, telefono, puntos, email, password, fecha_registro)
+            cliente.id = cliente_id
+            self.clientes[telefono] = cliente
 
-    def registrar_cliente(self, nombre, telefono, puntos_iniciales=0, email="", password=""):
-        cliente = Cliente(nombre, telefono, puntos_iniciales, email, password)
+    def registrar_cliente(self, nombre, apellido, telefono, puntos_iniciales=0, email="", password=""):
+        cliente = Cliente(nombre, apellido, telefono, puntos_iniciales, email, password)
         self.clientes[telefono] = cliente
         self.db.guardar_cliente(cliente)
         return cliente.to_dict()
@@ -650,7 +668,7 @@ db = DatabaseManager()
 empleados = db.listar_empleados()
 if len(empleados) == 0:
     admin_password = os.getenv('ADMIN_PASSWORD', 'admin123')
-    db.guardar_empleado("Administrador", "admin", admin_password)
+    db.guardar_empleado("Administrador", "Sistema", "admin", admin_password)
 
 if len(inventario.productos) == 0:
     productos_data = [
@@ -733,13 +751,15 @@ async def get_clientes():
 async def crear_cliente(request: Request):
     try:
         data = await request.json()
-        nombre = data.get("nombre")
-        nombre = ' '.join(word.capitalize() for word in nombre.split())
+        nombre = data.get("nombre", "")
+        apellido = data.get("apellido", "")
         telefono = data.get("telefono")
         puntos_iniciales = data.get("puntos_iniciales", 0)
         email = data.get("email", "")
         password = data.get("password", "")
-        nuevo = ctrl_ventas.registrar_cliente(nombre, telefono, puntos_iniciales, email, password)
+        nombre = ' '.join(word.capitalize() for word in nombre.split())
+        apellido = ' '.join(word.capitalize() for word in apellido.split())
+        nuevo = ctrl_ventas.registrar_cliente(nombre, apellido, telefono, puntos_iniciales, email, password)
         return {"success": True, "cliente": nuevo}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -757,7 +777,7 @@ async def verificar_cliente(request: Request):
         conn = sqlite3.connect("abarrotes.db")
         cursor = conn.cursor()
         cursor.execute('''
-            SELECT nombre, telefono, puntos FROM clientes 
+            SELECT nombre, apellido, telefono, puntos FROM clientes 
             WHERE email = ? AND password = ?
         ''', (email, password))
         resultado = cursor.fetchone()
@@ -767,8 +787,9 @@ async def verificar_cliente(request: Request):
             return {
                 "success": True,
                 "nombre": resultado[0],
-                "telefono": resultado[1],
-                "puntos": resultado[2]
+                "apellido": resultado[1],
+                "telefono": resultado[2],
+                "puntos": resultado[3]
             }
         else:
             return {"success": False, "message": "Email o contrasena incorrectos"}
@@ -1055,15 +1076,18 @@ async def registrar_empleado(request: Request):
     try:
         data = await request.json()
         nombre = data.get("nombre", "")
-        nombre = ' '.join(word.capitalize() for word in nombre.split())
+        apellido = data.get("apellido", "")
         username = data.get("username")
         password = data.get("password")
         
-        if not nombre or not username or not password:
+        if not nombre or not apellido or not username or not password:
             raise HTTPException(status_code=400, detail="Faltan campos requeridos")
         
+        nombre = ' '.join(word.capitalize() for word in nombre.split())
+        apellido = ' '.join(word.capitalize() for word in apellido.split())
+        
         db = DatabaseManager()
-        db.guardar_empleado(nombre, username, password)
+        db.guardar_empleado(nombre, apellido, username, password)
         return {"success": True, "message": "Empleado registrado exitosamente"}
     except Exception as e:
         if "UNIQUE constraint failed" in str(e):
@@ -1078,10 +1102,10 @@ async def verificar_empleado(request: Request):
         password = data.get("password")
         
         db = DatabaseManager()
-        valido, nombre = db.verificar_empleado(username, password)
+        valido, nombre, apellido = db.verificar_empleado(username, password)
         
         if valido:
-            return {"success": True, "nombre": nombre}
+            return {"success": True, "nombre": nombre + " " + apellido}
         else:
             return {"success": False, "message": "Usuario o contraseña incorrectos"}
     except Exception as e:
@@ -1095,8 +1119,9 @@ async def listar_empleados():
         {
             "id": e[0],
             "nombre": e[1],
-            "username": e[2],
-            "fecha_creacion": e[3]
+            "apellido": e[2],
+            "username": e[3],
+            "fecha_creacion": e[4]
         }
         for e in empleados
     ]

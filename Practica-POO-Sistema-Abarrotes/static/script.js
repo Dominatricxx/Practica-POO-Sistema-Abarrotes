@@ -242,12 +242,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     headers: { 'Content-Type': 'application/json' }
                 }).catch(function () { });
             }
-            if (ventaActualEmpleado && ventaActualEmpleado.carrito && ventaActualEmpleado.carrito.length > 0) {
-                fetch('/api/ventas/cancelar', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                }).catch(function () { });
-            }
             rolActual = null;
             document.getElementById('contenidoPrincipal').style.display = 'none';
             document.getElementById('menuInicial').style.display = 'flex';
@@ -255,7 +249,6 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('saludoCliente').style.display = 'none';
             productos = [];
             ventaActual = null;
-            ventaActualEmpleado = null;
         });
     }
 
@@ -538,14 +531,9 @@ function cerrarSesion() {
         document.getElementById('modalAdvertenciaCerrarSesion').style.display = 'block';
         return;
     }
-    if (ventaActualEmpleado && ventaActualEmpleado.carrito && ventaActualEmpleado.carrito.length > 0) {
-        document.getElementById('modalAdvertenciaCerrarSesion').style.display = 'block';
-        return;
-    }
 
     document.getElementById('modalConfirmarCerrarSesion').style.display = 'block';
 }
-
 async function cargarProductos() {
     try {
         const response = await fetch('/api/productos');

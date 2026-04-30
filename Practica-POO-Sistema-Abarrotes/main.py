@@ -673,9 +673,6 @@ if len(inventario.productos) == 0:
     
     for codigo, nombre, categoria, imagen_url in productos_data:
         ctrl_inventario.registrar_producto("unitario", codigo, nombre, categoria, 12, 25, 40, imagen_url)
-    
-    ctrl_ventas.registrar_cliente("Ana Lopez", "555-9876", 5)
-    ctrl_ventas.registrar_cliente("Edgar Rocha", "664-9866", 0)
 
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):

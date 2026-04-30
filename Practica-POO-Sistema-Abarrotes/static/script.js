@@ -182,6 +182,38 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('modalAdvertenciaVenta').style.display = 'none';
         });
     }
+
+    const btnConfirmarCerrarSesion = document.getElementById('btnConfirmarCerrarSesion');
+    if (btnConfirmarCerrarSesion) {
+        btnConfirmarCerrarSesion.addEventListener('click', function () {
+            document.getElementById('modalConfirmarCerrarSesion').style.display = 'none';
+            if (ventaActual && ventaActual.carrito && ventaActual.carrito.length > 0) {
+                fetch('/api/ventas/cancelar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                }).catch(function () { });
+            }
+            if (ventaActualEmpleado && ventaActualEmpleado.carrito && ventaActualEmpleado.carrito.length > 0) {
+                fetch('/api/ventas/cancelar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                }).catch(function () { });
+            }
+            rolActual = null;
+            document.getElementById('contenidoPrincipal').style.display = 'none';
+            document.getElementById('menuInicial').style.display = 'flex';
+            productos = [];
+            ventaActual = null;
+            ventaActualEmpleado = null;
+        });
+    }
+
+    const btnCancelarCerrarSesion = document.getElementById('btnCancelarCerrarSesion');
+    if (btnCancelarCerrarSesion) {
+        btnCancelarCerrarSesion.addEventListener('click', function () {
+            document.getElementById('modalConfirmarCerrarSesion').style.display = 'none';
+        });
+    }
 });
 
 
@@ -434,12 +466,7 @@ function cerrarSesion() {
         return;
     }
 
-    rolActual = null;
-    document.getElementById('contenidoPrincipal').style.display = 'none';
-    document.getElementById('menuInicial').style.display = 'flex';
-    productos = [];
-    ventaActual = null;
-    ventaActualEmpleado = null;
+    document.getElementById('modalConfirmarCerrarSesion').style.display = 'block';
 }
 
 async function cargarProductos() {
@@ -671,6 +698,11 @@ async function registrarCliente(event) {
 async function nuevaVenta() {
     if (ventaActual && ventaActual.carrito && ventaActual.carrito.length > 0) {
         document.getElementById('modalAdvertenciaVenta').style.display = 'block';
+        return;
+    }
+
+    if (ventaActual && (!ventaActual.carrito || ventaActual.carrito.length === 0)) {
+        mostrarNotificacion('No puedes realizar una nueva venta con el carrito vacio', 'error');
         return;
     }
 
@@ -1546,6 +1578,11 @@ async function eliminarProductoInventarioEmpleado(codigoBarra) {
 async function nuevaVentaEmpleado() {
     if (ventaActualEmpleado && ventaActualEmpleado.carrito && ventaActualEmpleado.carrito.length > 0) {
         document.getElementById('modalAdvertenciaVenta').style.display = 'block';
+        return;
+    }
+
+    if (ventaActualEmpleado && (!ventaActualEmpleado.carrito || ventaActualEmpleado.carrito.length === 0)) {
+        mostrarNotificacion('No puedes realizar una nueva venta con el carrito vacio', 'error');
         return;
     }
 

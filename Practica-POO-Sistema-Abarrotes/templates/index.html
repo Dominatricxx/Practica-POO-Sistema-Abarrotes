@@ -405,15 +405,22 @@
             </div>
         </div>
     </div>
-    <div id="modalAdvertenciaCerrarSesion" class="modal">
+    <div id="modalConfirmarCerrarSesion" class="modal">
         <div class="modal-content" style="max-width: 400px;">
             <div class="modal-header">
-                <h2><i class="fas fa-exclamation-triangle"></i> Aviso</h2>
+                <h2><i class="fas fa-sign-out-alt"></i> Cerrar Sesion</h2>
             </div>
             <div class="modal-body" style="text-align: center;">
-                <p style="margin-bottom: 20px; color: #333; font-size: 1.1em;">No puedes cerrar sesion hasta que
-                    termines la compra actual</p>
-                <button id="btnCerrarAdvertenciaSesion" class="btn-verificar" style="width: 100%;">Entendido</button>
+                <p style="margin-bottom: 20px; color: #333; font-size: 1.1em;">¿Estas seguro de que deseas cerrar
+                    sesion?</p>
+                <div style="display: flex; gap: 10px;">
+                    <button id="btnConfirmarCerrarSesion"
+                        style="flex: 1; padding: 12px; background: #f56565; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">Si,
+                        cerrar sesion</button>
+                    <button id="btnCancelarCerrarSesion"
+                        style="flex: 1; padding: 12px; background: #a0aec0; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">No,
+                        quedarme</button>
+                </div>
             </div>
         </div>
     </div>

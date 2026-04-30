@@ -12,12 +12,13 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('formRegistroCliente').addEventListener('submit', function (e) {
         e.preventDefault();
 
-        const nombre = document.getElementById('regClienteNombre').value;
+        const nombre = formatearNombre(document.getElementById('regClienteNombre').value);
+        const apellido = formatearNombre(document.getElementById('regClienteApellido').value);
         const email = document.getElementById('regClienteEmail').value;
         const telefono = document.getElementById('regClienteTelefono').value;
         const password = document.getElementById('regClientePassword').value;
 
-        if (!nombre || !email || !telefono || !password) {
+        if (!nombre || !apellido || !email || !telefono || !password) {
             mostrarNotificacion('Completa todos los campos', 'error');
             return;
         }
@@ -26,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                nombre: nombre,
+                nombre: nombre + ' ' + apellido,
                 telefono: telefono,
                 email: email,
                 password: password,
@@ -52,11 +53,12 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('formRegistroEmpleado').addEventListener('submit', function (e) {
         e.preventDefault();
 
-        const nombre = document.getElementById('regNombre').value;
+        const nombre = formatearNombre(document.getElementById('regNombre').value);
+        const apellido = formatearNombre(document.getElementById('regApellido').value);
         const username = document.getElementById('regUsername').value;
         const password = document.getElementById('regPassword').value;
 
-        if (!nombre || !username || !password) {
+        if (!nombre || !apellido || !username || !password) {
             mostrarNotificacion('Completa todos los campos', 'error');
             return;
         }
@@ -64,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fetch('/api/empleados/registrar', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ nombre: nombre, username: username, password: password })
+            body: JSON.stringify({ nombre: nombre + ' ' + apellido, username: username, password: password })
         })
             .then(response => response.json())
             .then(data => {
@@ -290,7 +292,7 @@ function seleccionarRol(rol) {
 
         const textoRolActual = document.getElementById('rolActual').textContent || document.getElementById('rolActual').innerText || '';
         const partes = textoRolActual.replace('Cliente ', '').trim().split(' ');
-        const primerNombre = partes[0] || 'Cliente';
+        const primerNombre = formatearNombre(partes[0]) || 'Cliente';
         document.getElementById('saludoCliente').innerHTML = '<i class="fas fa-user"></i> Hola ' + primerNombre;
     }
 }
@@ -356,7 +358,7 @@ function verificarLoginCliente() {
         .then(data => {
             if (data.success) {
                 cerrarModalLoginCliente();
-                const nombreCompleto = data.nombre;
+                const nombreCompleto = formatearNombre(data.nombre);
                 const primerNombre = nombreCompleto.split(' ')[0];
                 document.getElementById('rolActual').innerHTML = '<i class="fas fa-user"></i> Cliente ' + nombreCompleto;
                 document.getElementById('saludoCliente').innerHTML = '<i class="fas fa-user"></i> Hola ' + primerNombre;
@@ -402,7 +404,7 @@ function verificarLoginEmpleado() {
         .then(data => {
             if (data.success) {
                 cerrarModalLoginEmpleado();
-                const nombreCompleto = data.nombre;
+                const nombreCompleto = formatearNombre(data.nombre);
                 const primerNombre = nombreCompleto.split(' ')[0];
                 document.getElementById('rolActual').innerHTML = '<i class="fas fa-user-tie"></i> Empleado: ' + primerNombre + ' | Modo Administracion';
                 seleccionarRol('empleado');
@@ -465,11 +467,12 @@ function verificarPasswordAdmin() {
 document.getElementById('formRegistroEmpleado').addEventListener('submit', function (e) {
     e.preventDefault();
 
-    const nombre = document.getElementById('regNombre').value;
+    const nombre = formatearNombre(document.getElementById('regNombre').value);
+    const apellido = formatearNombre(document.getElementById('regApellido').value);
     const username = document.getElementById('regUsername').value;
     const password = document.getElementById('regPassword').value;
 
-    if (!nombre || !username || !password) {
+    if (!nombre || !apellido || !username || !password) {
         mostrarNotificacion('Completa todos los campos', 'error');
         return;
     }
@@ -477,7 +480,7 @@ document.getElementById('formRegistroEmpleado').addEventListener('submit', funct
     fetch('/api/empleados/registrar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre: nombre, username: username, password: password })
+        body: JSON.stringify({ nombre: nombre + ' ' + apellido, username: username, password: password })
     })
         .then(response => response.json())
         .then(data => {
@@ -1238,6 +1241,13 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+function formatearNombre(texto) {
+    if (!texto) return '';
+    return texto.toLowerCase().replace(/(?:^|\s)\S/g, function (letra) {
+        return letra.toUpperCase();
+    });
 }
 
 async function actualizarReporteSiVisible() {

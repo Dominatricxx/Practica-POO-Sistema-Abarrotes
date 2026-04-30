@@ -734,6 +734,7 @@ async def crear_cliente(request: Request):
     try:
         data = await request.json()
         nombre = data.get("nombre")
+        nombre = ' '.join(word.capitalize() for word in nombre.split())
         telefono = data.get("telefono")
         puntos_iniciales = data.get("puntos_iniciales", 0)
         email = data.get("email", "")
@@ -1053,7 +1054,8 @@ async def reporte_resumen_completo():
 async def registrar_empleado(request: Request):
     try:
         data = await request.json()
-        nombre = data.get("nombre")
+        nombre = data.get("nombre", "")
+        nombre = ' '.join(word.capitalize() for word in nombre.split())
         username = data.get("username")
         password = data.get("password")
         

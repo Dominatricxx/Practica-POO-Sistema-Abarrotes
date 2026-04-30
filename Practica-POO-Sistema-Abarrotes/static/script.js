@@ -246,6 +246,8 @@ document.addEventListener('DOMContentLoaded', () => {
             rolActual = null;
             document.getElementById('contenidoPrincipal').style.display = 'none';
             document.getElementById('menuInicial').style.display = 'flex';
+            document.getElementById('rolActual').style.display = 'block';
+            document.getElementById('saludoCliente').style.display = 'none';
             productos = [];
             ventaActual = null;
             ventaActualEmpleado = null;
@@ -267,10 +269,11 @@ function seleccionarRol(rol) {
     document.getElementById('menuInicial').style.display = 'none';
     document.getElementById('contenidoPrincipal').style.display = 'block';
 
-    const rolText = rol === 'empleado' ? 'Empleado - Modo Administración' : 'Cliente';
-    document.getElementById('rolActual').innerHTML = `<i class="fas ${rol === 'empleado' ? 'fa-user-tie' : 'fa-user'}"></i> ${rolText}`;
-
     if (rol === 'empleado') {
+        const rolText = 'Empleado - Modo Administración';
+        document.getElementById('rolActual').innerHTML = '<i class="fas fa-user-tie"></i> ' + rolText;
+        document.getElementById('rolActual').style.display = 'block';
+        document.getElementById('saludoCliente').style.display = 'none';
         document.getElementById('mainContentCliente').style.display = 'none';
         document.getElementById('mainContentEmpleado').style.display = 'grid';
         cargarInventarioEmpleado();
@@ -284,6 +287,13 @@ function seleccionarRol(rol) {
         cargarProductos();
         cargarClientes();
         nuevaVenta();
+        document.getElementById('rolActual').style.display = 'none';
+        document.getElementById('saludoCliente').style.display = 'block';
+
+        const textoRolActual = document.getElementById('rolActual').textContent || document.getElementById('rolActual').innerText || '';
+        const partes = textoRolActual.replace('Cliente ', '').trim().split(' ');
+        const primerNombre = partes[0] || 'Cliente';
+        document.getElementById('saludoCliente').innerHTML = '<i class="fas fa-user"></i> Hola ' + primerNombre;
     }
 }
 
@@ -348,6 +358,12 @@ function verificarLoginCliente() {
         .then(data => {
             if (data.success) {
                 cerrarModalLoginCliente();
+                const nombreCompleto = data.nombre;
+                const primerNombre = nombreCompleto.split(' ')[0];
+                document.getElementById('rolActual').innerHTML = '<i class="fas fa-user"></i> Cliente ' + nombreCompleto;
+                document.getElementById('saludoCliente').innerHTML = '<i class="fas fa-user"></i> Hola ' + primerNombre;
+                document.getElementById('saludoCliente').style.display = 'none';
+                document.getElementById('rolActual').style.display = 'block';
                 seleccionarRol('cliente');
             } else {
                 document.getElementById('loginClienteError').innerHTML = data.message || 'Email o contrasena incorrectos';
@@ -1206,6 +1222,15 @@ function mostrarNotificacion(mensaje, tipo) {
         notificacion.classList.remove('mostrar');
         setTimeout(() => notificacion.remove(), 300);
     }, 3000);
+}
+
+function obtenerPrimerNombre() {
+    const elementoRol = document.getElementById('rolActual');
+    const textoSpan = elementoRol.textContent || elementoRol.innerText || '';
+    const nombreSinIcono = textoSpan.replace(/<i[^>]*><\/i>/g, '').trim();
+    const partes = nombreSinIcono.split(' ');
+    const primerNombre = partes.length > 1 ? partes[1] : partes[0];
+    return primerNombre && primerNombre !== 'Cliente' ? primerNombre : 'Cliente';
 }
 
 function escapeHtml(text) {

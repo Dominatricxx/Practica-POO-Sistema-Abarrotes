@@ -235,6 +235,9 @@
                             <button onclick="nuevaVenta()" class="btn-nueva">
                                 <i class="fas fa-plus-circle"></i> Nueva Venta
                             </button>
+                            <button onclick="vaciarCarrito()" class="btn-vaciar">
+                                <i class="fas fa-trash-alt"></i> Vaciar Carrito
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -433,6 +436,28 @@
                 <p style="margin-bottom: 20px; color: #333; font-size: 1.1em;">No puedes realizar una nueva compra hasta
                     que termines la actual</p>
                 <button id="btnCerrarAdvertenciaVenta" class="btn-verificar" style="width: 100%;">Entendido</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalConfirmarVaciarCarrito" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <span class="close"
+                onclick="document.getElementById('modalConfirmarVaciarCarrito').style.display='none'">&times;</span>
+            <div class="modal-header">
+                <h2><i class="fas fa-trash-alt"></i> Vaciar Carrito</h2>
+            </div>
+            <div class="modal-body" style="text-align: center;">
+                <p style="margin-bottom: 20px; color: #333; font-size: 1.1em;">Se devolveran todos los productos al
+                    inventario y se vaciara el carrito</p>
+                <div style="display: flex; gap: 10px;">
+                    <button id="btnConfirmarVaciarCarrito"
+                        style="flex: 1; padding: 12px; background: #e53e3e; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">Si,
+                        vaciar carrito</button>
+                    <button id="btnCancelarVaciarCarrito"
+                        style="flex: 1; padding: 12px; background: #a0aec0; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">No,
+                        mantener productos</button>
+                </div>
             </div>
         </div>
     </div>

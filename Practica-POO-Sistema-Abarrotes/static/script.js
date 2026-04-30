@@ -183,6 +183,50 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const btnConfirmarVaciarCarrito = document.getElementById('btnConfirmarVaciarCarrito');
+    if (btnConfirmarVaciarCarrito) {
+        btnConfirmarVaciarCarrito.addEventListener('click', async function () {
+            document.getElementById('modalConfirmarVaciarCarrito').style.display = 'none';
+            try {
+                const response = await fetch('/api/ventas/cancelar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    ventaActual = null;
+                    document.getElementById('folioVenta').textContent = '';
+                    document.getElementById('carritoItems').innerHTML = '<div class="carrito-vacio">Agrega productos al carrito</div>';
+                    document.getElementById('subtotal').textContent = '$0.00';
+                    document.getElementById('impuestos').textContent = '$0.00';
+                    document.getElementById('descuento').textContent = '-$0.00';
+                    document.getElementById('total').textContent = '$0.00';
+                    document.getElementById('tipoDescuento').value = 'ninguno';
+                    document.getElementById('valorDescuento').value = '';
+                    document.getElementById('categoriaDescuento').value = '';
+                    toggleCamposDescuento();
+                    await cargarProductos();
+                    await nuevaVenta();
+                    mostrarNotificacion('Carrito vaciado y stock restaurado', 'success');
+                } else {
+                    mostrarNotificacion('Error al vaciar el carrito', 'error');
+                }
+            } catch (error) {
+                console.error('Error vaciando carrito:', error);
+                mostrarNotificacion('Error al vaciar el carrito', 'error');
+            }
+        });
+    }
+
+    const btnCancelarVaciarCarrito = document.getElementById('btnCancelarVaciarCarrito');
+    if (btnCancelarVaciarCarrito) {
+        btnCancelarVaciarCarrito.addEventListener('click', function () {
+            document.getElementById('modalConfirmarVaciarCarrito').style.display = 'none';
+        });
+    }
+
     const btnConfirmarCerrarSesion = document.getElementById('btnConfirmarCerrarSesion');
     if (btnConfirmarCerrarSesion) {
         btnConfirmarCerrarSesion.addEventListener('click', function () {
@@ -998,6 +1042,53 @@ async function finalizarVenta() {
     document.getElementById('totalConfirmar').textContent = '$' + ventaActual.total.toFixed(2);
     document.getElementById('modalConfirmarCompra').style.display = 'block';
 }
+
+async function vaciarCarrito() {
+    if (!ventaActual || !ventaActual.carrito || ventaActual.carrito.length === 0) {
+        mostrarNotificacion('No hay productos en el carrito', 'error');
+        return;
+    }
+
+    document.getElementById('modalConfirmarVaciarCarrito').style.display = 'block';
+}
+
+document.getElementById('btnConfirmarVaciarCarrito').addEventListener('click', async function () {
+    document.getElementById('modalConfirmarVaciarCarrito').style.display = 'none';
+    try {
+        const response = await fetch('/api/ventas/cancelar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            ventaActual = null;
+            document.getElementById('folioVenta').textContent = '';
+            document.getElementById('carritoItems').innerHTML = '<div class="carrito-vacio">Agrega productos al carrito</div>';
+            document.getElementById('subtotal').textContent = '$0.00';
+            document.getElementById('impuestos').textContent = '$0.00';
+            document.getElementById('descuento').textContent = '-$0.00';
+            document.getElementById('total').textContent = '$0.00';
+            document.getElementById('tipoDescuento').value = 'ninguno';
+            document.getElementById('valorDescuento').value = '';
+            document.getElementById('categoriaDescuento').value = '';
+            toggleCamposDescuento();
+            await cargarProductos();
+            await nuevaVenta();
+            mostrarNotificacion('Carrito vaciado y stock restaurado', 'success');
+        } else {
+            mostrarNotificacion('Error al vaciar el carrito', 'error');
+        }
+    } catch (error) {
+        console.error('Error vaciando carrito:', error);
+        mostrarNotificacion('Error al vaciar el carrito', 'error');
+    }
+});
+
+document.getElementById('btnCancelarVaciarCarrito').addEventListener('click', function () {
+    document.getElementById('modalConfirmarVaciarCarrito').style.display = 'none';
+});
 
 function mostrarTicket(ticket) {
     const modal = document.getElementById('modalTicket');
@@ -1929,6 +2020,9 @@ window.onclick = function (event) {
             }
             if (modal.id === 'modalRegistroCliente') {
                 document.getElementById('formRegistroCliente').reset();
+            }
+            if (modal.id === 'modalConfirmarVaciarCarrito') {
+                document.getElementById('modalConfirmarVaciarCarrito').style.display = 'none';
             }
         }
     });

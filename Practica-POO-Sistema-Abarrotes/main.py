@@ -1135,6 +1135,20 @@ async def listar_empleados():
         for e in empleados
     ]
 
+@app.post("/api/empleados/verificar-admin")
+async def verificar_admin(request: Request):
+    try:
+        data = await request.json()
+        password = data.get("password")
+        admin_password = os.getenv('ADMIN_PASSWORD', 'admin123')
+        
+        if password == admin_password:
+            return {"success": True}
+        else:
+            return {"success": False, "message": "Contrasena incorrecta"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 @app.post("/api/empleados/reestablecer-password")
 async def reestablecer_password_empleado(request: Request):
     try:
@@ -1164,17 +1178,6 @@ async def reestablecer_password_empleado(request: Request):
         conn.close()
         
         return {"success": True, "message": "Contrasena reestablecida exitosamente"}
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    try:
-        data = await request.json()
-        password = data.get("password")
-        admin_password = os.getenv('ADMIN_PASSWORD', 'admin123')
-        
-        if password == admin_password:
-            return {"success": True}
-        else:
-            return {"success": False, "message": "Contraseña incorrecta"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

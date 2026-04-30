@@ -509,38 +509,6 @@ function verificarPasswordAdmin() {
         });
 }
 
-document.getElementById('formRegistroEmpleado').addEventListener('submit', function (e) {
-    e.preventDefault();
-
-    const nombre = formatearNombre(document.getElementById('regNombre').value);
-    const apellido = formatearNombre(document.getElementById('regApellido').value);
-    const username = document.getElementById('regUsername').value;
-    const password = document.getElementById('regPassword').value;
-
-    if (!nombre || !apellido || !username || !password) {
-        mostrarNotificacion('Completa todos los campos', 'error');
-        return;
-    }
-
-    fetch('/api/empleados/registrar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nombre: nombre, apellido: apellido, username: username, password: password })
-    })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                mostrarNotificacion('Empleado registrado exitosamente', 'success');
-                cerrarModalRegistroEmpleado();
-            } else {
-                mostrarNotificacion('Error: ' + data.detail, 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            mostrarNotificacion('Error al registrar empleado', 'error');
-        });
-});
 
 function cerrarModalPassword() {
     const modal = document.getElementById('modalPassword');

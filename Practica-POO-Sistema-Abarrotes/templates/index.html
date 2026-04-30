@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Abarrotes Don Pepe</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <div id="menuInicial" class="menu-inicial">
+        <div class="menu-card">
+            <h1 style="font-size: 2.5em; color: #333; margin-bottom: 10px;">ABARROTES DON PEPE</h1>
+            <p style="color: #666; font-style: italic; margin-bottom: 30px; font-size: 1.1em;">Tu tienda de confianza
+            </p>
+            <h2>Favor de seleccionar una opción</h2>
+            <div class="rol-buttons">
+                <button onclick="mostrarLoginEmpleado()" class="btn-rol empleado">
+                    <i class="fas fa-user-tie"></i>
+                    <span>Empleado</span>
+                </button>
+                <button onclick="mostrarLoginCliente()" class="btn-rol cliente">
+                    <i class="fas fa-user"></i>
+                    <span>Cliente</span>
+                </button>
+            </div>
+        </div>
+        <div id="modalLoginCliente" class="modal">
+            <div class="modal-content password-modal">
+                <span class="close" onclick="cerrarModalLoginCliente()">&times;</span>
+                <div class="password-header">
+                    <i class="fas fa-user"></i>
+                    <h2>Acceso Cliente</h2>
+                </div>
+                <p>Ingresa tus credenciales</p>
+                <div class="password-input-container" style="flex-direction: column; gap: 10px;">
+                    <div
+                        style="display: flex; width: 100%; border: 1px solid #ddd; border-radius: 5px; overflow: visible;">
+                        <input type="text" id="loginClienteEmail" placeholder="usuario" autocomplete="off"
+                            style="flex: 1; padding: 12px; border: none; outline: none;">
+                        <div style="position: relative; min-width: 140px;">
+                            <button type="button" id="btnDominioLogin"
+                                onclick="toggleDropdownDominio('dropdownDominioLogin')"
+                                style="width: 100%; height: 100%; padding: 12px; background: #f0f0f0; border: none; border-left: 1px solid #ddd; cursor: pointer; font-size: 0.9em; color: #333; text-align: left;">
+                                @gmail.com <i class="fas fa-chevron-down" style="float: right; margin-top: 2px;"></i>
+                            </button>
+                            <div id="dropdownDominioLogin"
+                                style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 5px 5px; z-index: 10; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                                <div onclick="seleccionarDominio('btnDominioLogin', 'dropdownDominioLogin', '@gmail.com')"
+                                    style="padding: 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0;">@gmail.com
+                                </div>
+                                <div onclick="seleccionarDominio('btnDominioLogin', 'dropdownDominioLogin', '@outlook.com')"
+                                    style="padding: 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0;">
+                                    @outlook.com</div>
+                                <div onclick="seleccionarDominio('btnDominioLogin', 'dropdownDominioLogin', '@hotmail.com')"
+                                    style="padding: 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0;">
+                                    @hotmail.com</div>
+                                <div onclick="seleccionarDominio('btnDominioLogin', 'dropdownDominioLogin', '@uabc.edu.mx')"
+                                    style="padding: 10px; cursor: pointer;">@uabc.edu.mx</div>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="password" id="loginClientePassword" placeholder="Contrasena" autocomplete="off"
+                        style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px;">
+                    <div style="height: 10px;"></div>
+                    <button type="button" onclick="verificarLoginCliente()" class="btn-verificar"
+                        style="width:100%; padding:10px; background:#4299e1; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold; font-size:1em;">
+                        Ingresar
+                    </button>
+                </div>
+                <div id="loginClienteError" class="password-error"></div>
+                <button id="btnReestablecerCliente" onclick="mostrarReestablecerCliente()"
+                    style="width:100%; margin-top:12px; padding:10px; background:#e53e3e; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold; display:none;">
+                    Reestablecer Contraseña
+                </button>
+                <button onclick="cerrarModalLoginCliente(); mostrarRegistroCliente();"
+                    style="width:100%; margin-top:12px; padding:10px; background:#ffd966; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">Registrarme
+                    como cliente nuevo</button>
+            </div>
+        </div>
+        <div id="modalRegistroCliente" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="cerrarModalRegistroCliente()">&times;</span>
+                <h2><i class="fas fa-user-plus"></i> Registro de Cliente</h2>
+                <form id="formRegistroCliente">
+                    <input type="text" id="regClienteNombre" placeholder="Nombre" required>
+                    <input type="text" id="regClienteApellido" placeholder="Apellido" required>
+                    <div
+                        style="display: flex; width: 100%; border: 1px solid #ddd; border-radius: 5px; overflow: visible;">
+                        <input type="text" id="regClienteEmail" placeholder="usuario" autocomplete="off"
+                            style="flex: 1; padding: 12px; border: none; outline: none;">
+                        <div style="position: relative; min-width: 140px;">
+                            <button type="button" id="btnDominioRegistro"
+                                onclick="toggleDropdownDominio('dropdownDominioRegistro')"
+                                style="width: 100%; height: 100%; padding: 12px; background: #f0f0f0; border: none; border-left: 1px solid #ddd; cursor: pointer; font-size: 0.9em; color: #333; text-align: left;">
+                                @gmail.com <i class="fas fa-chevron-down" style="float: right; margin-top: 2px;"></i>
+                            </button>
+                            <div id="dropdownDominioRegistro"
+                                style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 5px 5px; z-index: 10; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                                <div onclick="seleccionarDominio('btnDominioRegistro', 'dropdownDominioRegistro', '@gmail.com')"
+                                    style="padding: 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0;">@gmail.com
+                                </div>
+                                <div onclick="seleccionarDominio('btnDominioRegistro', 'dropdownDominioRegistro', '@outlook.com')"
+                                    style="padding: 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0;">
+                                    @outlook.com</div>
+                                <div onclick="seleccionarDominio('btnDominioRegistro', 'dropdownDominioRegistro', '@hotmail.com')"
+                                    style="padding: 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0;">
+                                    @hotmail.com</div>
+                                <div onclick="seleccionarDominio('btnDominioRegistro', 'dropdownDominioRegistro', '@uabc.edu.mx')"
+                                    style="padding: 10px; cursor: pointer;">@uabc.edu.mx</div>
+                            </div>
+                        </div>
+                    </div> <input type="tel" id="regClienteTelefono" placeholder="Telefono" required>
+                    <input type="password" id="regClientePassword" placeholder="Contrasena" required>
+                    <button type="submit">Registrarme</button>
+                </form>
+            </div>
+        </div>
+        <div id="modalReestablecerCliente" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="cerrarModalReestablecerCliente()">&times;</span>
+                <div class="password-header">
+                    <i class="fas fa-key"></i>
+                    <h2>Reestablecer Contraseña Cliente</h2>
+                </div>
+                <form id="formReestablecerCliente">
+                    <div
+                        style="display: flex; width: 100%; border: 1px solid #ddd; border-radius: 5px; overflow: visible;">
+                        <input type="text" id="reestablecerEmailCliente" placeholder="usuario" autocomplete="off"
+                            style="flex: 1; padding: 12px; border: none; outline: none;">
+                        <div style="position: relative; min-width: 140px;">
+                            <button type="button" id="btnDominioReestablecer"
+                                onclick="toggleDropdownDominio('dropdownDominioReestablecer')"
+                                style="width: 100%; height: 100%; padding: 12px; background: #f0f0f0; border: none; border-left: 1px solid #ddd; cursor: pointer; font-size: 0.9em; color: #333; text-align: left;">
+                                @gmail.com <i class="fas fa-chevron-down" style="float: right; margin-top: 2px;"></i>
+                            </button>
+                            <div id="dropdownDominioReestablecer"
+                                style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 5px 5px; z-index: 10; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                                <div onclick="seleccionarDominio('btnDominioReestablecer', 'dropdownDominioReestablecer', '@gmail.com')"
+                                    style="padding: 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0;">@gmail.com
+                                </div>
+                                <div onclick="seleccionarDominio('btnDominioReestablecer', 'dropdownDominioReestablecer', '@outlook.com')"
+                                    style="padding: 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0;">
+                                    @outlook.com</div>
+                                <div onclick="seleccionarDominio('btnDominioReestablecer', 'dropdownDominioReestablecer', '@hotmail.com')"
+                                    style="padding: 10px; cursor: pointer; border-bottom: 1px solid #f0f0f0;">
+                                    @hotmail.com</div>
+                                <div onclick="seleccionarDominio('btnDominioReestablecer', 'dropdownDominioReestablecer', '@uabc.edu.mx')"
+                                    style="padding: 10px; cursor: pointer;">@uabc.edu.mx</div>
+                            </div>
+                        </div>
+                    </div>
+                    <input type="tel" id="reestablecerTelefonoCliente" placeholder="Telefono" required>
+                    <input type="password" id="reestablecerAdminPasswordCliente"
+                        placeholder="Contraseña de administrador" required>
+                    <input type="password" id="reestablecerNuevaPasswordCliente" placeholder="Nueva contraseña"
+                        required>
+                    <button type="submit">Reestablecer Contraseña</button>
+                </form>
+                <div id="reestablecerClienteError" style="color: #e53e3e; margin-top: 10px; text-align: center;"></div>
+            </div>
+        </div>
+        <div id="modalLoginEmpleado" class="modal">
+            <div class="modal-content password-modal" style="overflow: visible;">
+                <span class="close" onclick="cerrarModalLoginEmpleado()">&times;</span>
+                <div class="password-header">
+                    <i class="fas fa-user-tie"></i>
+                    <h2>Acceso Empleado</h2>
+                </div>
+                <p>Ingresa tus credenciales</p>
+                <div class="password-input-container" style="flex-direction: column; gap: 10px;">
+                    <input type="text" id="loginUsername" placeholder="Usuario" autocomplete="off"
+                        style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px;">
+                    <input type="password" id="loginPassword" placeholder="Contraseña" autocomplete="off"
+                        style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px;">
+                    <div style="height: 10px;"></div>
+                    <button type="button" onclick="verificarLoginEmpleado()" class="btn-verificar"
+                        style="width:100%; padding:10px; background:#4299e1; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold; font-size:1em;">
+                        Ingresar
+                    </button>
+                </div>
+                <div id="loginError" class="password-error"></div>
+                <button id="btnReestablecerEmpleado" onclick="mostrarReestablecerEmpleado()"
+                    style="width:100%; margin-top:12px; padding:10px; background:#e53e3e; color:white; border:none; border-radius:5px; cursor:pointer; font-weight:bold; display:none;">
+                    Reestablecer Contraseña
+                </button>
+                <button onclick="cerrarModalLoginEmpleado(); solicitarContrasena();"
+                    style="width:100%; margin-top:12px; padding:10px; background:#ffd966; border:none; border-radius:5px; cursor:pointer; font-weight:bold;">Registrar
+                    nuevo empleado</button>
+            </div>
+        </div>
+
+        <div id="modalRegistroEmpleado" class="modal">
+            <div class="modal-content" style="overflow: visible;">
+                <span class="close" onclick="cerrarModalRegistroEmpleado()">&times;</span>
+                <div class="password-header">
+                    <i class="fas fa-user-plus"></i>
+                    <h2>Registrar Nuevo Empleado</h2>
+                </div>
+                <form id="formRegistroEmpleado">
+                    <input type="text" id="regNombre" placeholder="Nombre" required>
+                    <input type="text" id="regApellido" placeholder="Apellido" required>
+                    <input type="text" id="regUsername" placeholder="Usuario" required>
+                    <input type="password" id="regPassword" placeholder="Contraseña" required>
+                    <button type="submit">Registrar Empleado</button>
+                </form>
+            </div>
+        </div>
+        <div id="modalReestablecerEmpleado" class="modal">
+            <div class="modal-content" style="overflow: visible;">
+                <span class="close" onclick="cerrarModalReestablecerEmpleado()">&times;</span>
+                <div class="password-header">
+                    <i class="fas fa-key"></i>
+                    <h2>Reestablecer Contraseña Empleado</h2>
+                </div>
+                <form id="formReestablecerEmpleado">
+                    <input type="text" id="reestablecerUsernameEmpleado" placeholder="Usuario" required>
+                    <input type="password" id="reestablecerAdminPasswordEmpleado"
+                        placeholder="Contraseña de administrador" required>
+                    <input type="password" id="reestablecerNuevaPasswordEmpleado" placeholder="Nueva contraseña"
+                        required>
+                    <button type="submit">Reestablecer Contraseña</button>
+                </form>
+                <div id="reestablecerEmpleadoError" style="color: #e53e3e; margin-top: 10px; text-align: center;"></div>
+            </div>
+        </div>
+
+        <div id="modalPassword" class="modal">
+            <div class="modal-content password-modal">
+                <span class="close" onclick="cerrarModalPassword()">&times;</span>
+                <div class="password-header">
+                    <i class="fas fa-lock"></i>
+                    <h2>Acceso Administrador</h2>
+                </div>
+                <p>Ingresa la contraseña de administrador</p>
+                <div class="password-input-container">
+                    <input type="password" id="passwordInput" placeholder="Contraseña" autocomplete="off">
+                    <button onclick="verificarPasswordAdmin()" class="btn-verificar">
+                        <i class="fas fa-arrow-right"></i> Verificar
+                    </button>
+                </div>
+                <div id="passwordError" class="password-error"></div>
+                <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+                    <div class="spinner"></div>
+                    <p>Verificando acceso...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="contenidoPrincipal" style="display: none;">
+        <div class="container">
+            <header style="position: relative;">
+                <div class="logo">
+                    <i class="fas fa-store"></i>
+                    <h1>ABARROTES DON PEPE</h1>
+                </div>
+                <p class="slogan">Tu tienda de confianza</p>
+            </header>
+
+            <div class="rol-header">
+                <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+                    <span id="rolActual"></span>
+                    <span id="saludoCliente"
+                        style="display: none; font-size: 1.2em; font-weight: bold; color: #48bb78;"></span>
+                    <span id="puntosCliente" style="display: none;">
+                        <span style="color: #667eea; font-weight: bold;">Tus puntos: </span>
+                        <span id="cantidadPuntosCliente" style="color: #48bb78; font-weight: bold;">0</span>
+                    </span>
+                </div>
+                <button onclick="cerrarSesion()" class="btn-cerrar-sesion" type="button">
+                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                </button>
+            </div>
+
+            <div id="mainContentCliente" class="main-content">
+                <div class="panel productos-panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-boxes"></i> Productos Disponibles</h2>
+                        <button id="btnAgregarProducto" class="btn-agregar" style="display: none;"
+                            onclick="mostrarModalProducto()">
+                            <i class="fas fa-plus"></i> Agregar Producto
+                        </button>
+                    </div>
+                    <div class="filtro-categorias" style="margin-bottom: 20px;">
+                        <label style="font-weight: bold; margin-right: 10px;">Categoría:</label>
+                        <select id="filtroCategoria" onchange="filtrarProductos()"
+                            style="padding: 8px; border-radius: 5px; border: 1px solid #ddd;">
+                            <option value="todas">Todas</option>
+                            <option value="Limpieza">Limpieza</option>
+                            <option value="Bebidas">Bebidas</option>
+                            <option value="Lacteos">Lácteos</option>
+                            <option value="Carnes">Carnes</option>
+                            <option value="Verduras">Verduras</option>
+                        </select>
+                    </div>
+                    <div class="productos-grid" id="productosGrid"></div>
+                </div>
+
+                <div class="panel ventas-panel">
+                    <div class="panel-header">
+                        <h2><i class="fas fa-shopping-cart"></i> Punto de Venta</h2>
+                    </div>
+
+                    <div class="venta-actual">
+                        <div class="carrito-header">
+                            <h3>Carrito de Compra</h3>
+                            <span id="folioVenta" class="folio"></span>
+                        </div>
+                        <div class="carrito-items" id="carritoItems">
+                            <div class="carrito-vacio">Agrega productos al carrito</div>
+                        </div>
+
+                        <div id="descuentoSection" class="descuento-section">
+                            <h4><i class="fas fa-tag"></i> Aplicar Descuento</h4>
+                            <div class="descuento-opciones">
+                                <select id="tipoDescuento">
+                                    <option value="ninguno">Sin descuento</option>
+                                    <option value="porcentaje">Porcentaje (%)</option>
+                                    <option value="fijo">Monto fijo ($)</option>
+                                    <option value="3x2">3x2 por categoría</option>
+                                </select>
+                                <input type="number" id="valorDescuento" placeholder="Valor" step="0.01">
+                                <input type="text" id="categoriaDescuento" placeholder="Categoría (para 3x2)">
+                                <button onclick="aplicarDescuento()" class="btn-descuento">
+                                    <i class="fas fa-percent"></i> Aplicar
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="totales">
+                            <div class="total-line">
+                                <span>Subtotal:</span>
+                                <span id="subtotal">$0.00</span>
+                            </div>
+                            <div class="total-line">
+                                <span>Impuestos:</span>
+                                <span id="impuestos">$0.00</span>
+                            </div>
+                            <div class="total-line">
+                                <span>Descuento:</span>
+                                <span id="descuento">-$0.00</span>
+                            </div>
+                            <div class="total-line total-final">
+                                <span>TOTAL:</span>
+                                <span id="total">$0.00</span>
+                            </div>
+                        </div>
+
+                        <div class="acciones-venta">
+                            <button onclick="finalizarVenta()" class="btn-cobrar">
+                                <i class="fas fa-money-bill-wave"></i> Cobrar
+                            </button>
+                            <button onclick="nuevaVenta()" class="btn-nueva">
+                                <i class="fas fa-plus-circle"></i> Nueva Venta
+                            </button>
+                            <button onclick="vaciarCarrito()" class="btn-vaciar">
+                                <i class="fas fa-trash-alt"></i> Vaciar Carrito
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="mainContentEmpleado" class="empleado-double-panel" style="display: none;">
+        <div class="panel-gestion-ventas">
+            <div class="panel-header">
+                <h2><i class="fas fa-chart-bar"></i> Gestión de Ventas</h2>
+            </div>
+
+            <div style="margin: 20px 0; display: flex; gap: 10px;">
+                <button onclick="cargarReporteEmpleado('dia')" class="btn-periodo"
+                    style="flex: 1; padding: 12px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                    <i class="fas fa-calendar-day"></i> Hoy
+                </button>
+                <button onclick="cargarReporteEmpleado('semana')" class="btn-periodo"
+                    style="flex: 1; padding: 12px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                    <i class="fas fa-calendar-week"></i> Esta Semana
+                </button>
+                <button onclick="cargarReporteEmpleado('mes')" class="btn-periodo"
+                    style="flex: 1; padding: 12px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                    <i class="fas fa-calendar-alt"></i> Este Mes
+                </button>
+            </div>
+
+            <div id="reporteContenidoEmpleado" class="reportes-scroll">
+            </div>
+            <button onclick="mostrarBaseDatosUsuarios()"
+                style="width: 100%; margin-top: 20px; padding: 14px; background: #48bb78; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1.1em; font-weight: bold; transition: background 0.3s ease;">
+                <i class="fas fa-database"></i> Ver Base de Datos de Usuarios
+            </button>
+        </div>
+
+        <div class="panel-inventario-empleado">
+            <div class="panel-header">
+                <h2><i class="fas fa-boxes"></i> Inventario</h2>
+                <button onclick="mostrarModalAgregarProductoInventario()" class="btn-agregar"
+                    style="padding: 8px 15px;">
+                    <i class="fas fa-plus"></i> Agregar Producto
+                </button>
+            </div>
+
+            <div class="filtros-inventario-empleado">
+                <input type="text" id="filtroInventarioEmpleado" placeholder="Buscar por nombre o código..."
+                    onkeyup="filtrarInventarioEmpleado()">
+                <select id="filtroCategoriaInventarioEmpleado" onchange="filtrarInventarioEmpleado()">
+                    <option value="">Todas las categorías</option>
+                    <option value="Limpieza">Limpieza</option>
+                    <option value="Bebidas">Bebidas</option>
+                    <option value="Lacteos">Lácteos</option>
+                    <option value="Carnes">Carnes</option>
+                    <option value="Verduras">Verduras</option>
+                </select>
+            </div>
+
+            <div class="inventario-scroll">
+                <table class="tabla-inventario-empleado">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Nombre</th>
+                            <th>Categoría</th>
+                            <th>Precio</th>
+                            <th>Stock</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventarioBodyEmpleado">
+                        <tr>
+                            <td colspan="6" style="text-align: center;">Cargando productos...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    </div>
+    </div>
+
+    <div id="modalProducto" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="cerrarModalProducto()">&times;</span>
+            <h2><i class="fas fa-box"></i> Registrar Producto</h2>
+            <form id="formProducto">
+                <select id="tipoProducto" required>
+                    <option value="unitario">Producto Unitario</option>
+                    <option value="granel">Producto a Granel</option>
+                </select>
+                <input type="text" id="codigoProducto" placeholder="Código de barras" required>
+                <input type="text" id="nombreProducto" placeholder="Nombre" required>
+                <input type="text" id="categoriaProducto" placeholder="Categoría" required>
+                <input type="text" id="imagenProducto" placeholder="Nombre del archivo de imagen (ej: producto.jpg)"
+                    value="default.jpg">
+                <input type="number" id="precioCompraProducto" placeholder="Precio compra" step="0.01" required>
+                <input type="number" id="precioVentaProducto" placeholder="Precio venta" step="0.01" required>
+                <input type="number" id="stockProducto" placeholder="Stock inicial" step="0.01" min="0"
+                    oninput="if(this.value < 0) this.value = 0" required>
+                <button type="submit">Registrar Producto</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="modalCliente" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="cerrarModalCliente()">&times;</span>
+            <h2><i class="fas fa-user"></i> Registrar Cliente</h2>
+            <form id="formCliente">
+                <input type="text" id="nombreCliente" placeholder="Nombre completo" required>
+                <input type="tel" id="telefonoCliente" placeholder="Teléfono" required>
+                <input type="number" id="puntosCliente" placeholder="Puntos iniciales" value="0">
+                <button type="submit">Registrar Cliente</button>
+            </form>
+        </div>
+    </div>
+    <div id="modalTicket" class="modal">
+        <div class="modal-content ticket-modal">
+            <span class="close" onclick="cerrarModalTicket()">&times;</span>
+            <h2><i class="fas fa-receipt"></i> Ticket de Venta</h2>
+            <pre id="ticketContent" class="ticket-content"></pre>
+            <button onclick="cerrarModalTicket()" class="btn-cerrar">Cerrar</button>
+        </div>
+    </div>
+    <div id="modalConfirmarCompra" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-money-bill-wave"></i> Confirmar Compra</h2>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 10px; color: #333;">¿Confirmar la siguiente compra?</p>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin: 15px 0;">
+                    <p style="margin-bottom: 10px;"><strong>Total a pagar:</strong></p>
+                    <p id="totalConfirmar"
+                        style="font-size: 1.8em; font-weight: bold; color: #667eea; text-align: center;">$0.00</p>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button onclick="confirmarCompra()" class="btn-verificar" style="flex: 1;">Confirmar</button>
+                    <button onclick="cerrarModalConfirmarCompra()" class="btn-cerrar"
+                        style="flex: 1; background: #a0aec0;">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="modalCantidad" class="modal">
+        <div class="modal-content" style="max-width: 350px;">
+            <span class="close" onclick="cerrarModalCantidad()">&times;</span>
+            <div class="modal-header">
+                <h2><i class="fas fa-cart-plus"></i> Agregar Producto</h2>
+            </div>
+            <div class="modal-body">
+                <p id="mensajeCantidad" style="margin-bottom: 15px; color: #333;"></p>
+                <input type="number" id="inputCantidad" step="any" placeholder="Cantidad"
+                    style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1em;">
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button onclick="confirmarCantidad()" class="btn-verificar" style="flex: 1;">Confirmar</button>
+                    <button onclick="cerrarModalCantidad()" class="btn-cerrar"
+                        style="flex: 1; background: #a0aec0;">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="modalConfirmarCerrarSesion" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-sign-out-alt"></i> Cerrar Sesion</h2>
+            </div>
+            <div class="modal-body" style="text-align: center;">
+                <p style="margin-bottom: 20px; color: #333; font-size: 1.1em;">¿Estas seguro de que deseas cerrar
+                    sesion?</p>
+                <div style="display: flex; gap: 10px;">
+                    <button id="btnConfirmarCerrarSesion"
+                        style="flex: 1; padding: 12px; background: #f56565; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">Si,
+                        cerrar sesion</button>
+                    <button id="btnCancelarCerrarSesion"
+                        style="flex: 1; padding: 12px; background: #a0aec0; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">No,
+                        quedarme</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="modalAdvertenciaVenta" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-exclamation-triangle"></i> Aviso</h2>
+            </div>
+            <div class="modal-body" style="text-align: center;">
+                <p style="margin-bottom: 20px; color: #333; font-size: 1.1em;">No puedes realizar una nueva compra hasta
+                    que termines la actual</p>
+                <button id="btnCerrarAdvertenciaVenta" class="btn-verificar" style="width: 100%;">Entendido</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalAdvertenciaCerrarSesion" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-exclamation-triangle"></i> Aviso</h2>
+            </div>
+            <div class="modal-body" style="text-align: center;">
+                <p style="margin-bottom: 20px; color: #333; font-size: 1.1em;">No puedes cerrar sesion si tienes
+                    productos sin pagar en el carrito</p>
+                <button id="btnCerrarAdvertenciaSesion" class="btn-verificar" style="width: 100%;">Entendido</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalConfirmarVaciarCarrito" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <span class="close"
+                onclick="document.getElementById('modalConfirmarVaciarCarrito').style.display='none'">&times;</span>
+            <div class="modal-header">
+                <h2><i class="fas fa-trash-alt"></i> Vaciar Carrito</h2>
+            </div>
+            <div class="modal-body" style="text-align: center;">
+                <p style="margin-bottom: 20px; color: #333; font-size: 1.1em;">Se devolveran todos los productos al
+                    inventario y se vaciara el carrito</p>
+                <div style="display: flex; gap: 10px;">
+                    <button id="btnConfirmarVaciarCarrito"
+                        style="flex: 1; padding: 12px; background: #e53e3e; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">Si,
+                        vaciar carrito</button>
+                    <button id="btnCancelarVaciarCarrito"
+                        style="flex: 1; padding: 12px; background: #a0aec0; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">No,
+                        mantener productos</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalAgregarProductoInventario" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="cerrarModalAgregarProductoInventario()">&times;</span>
+            <h2><i class="fas fa-box"></i> Agregar Producto al Inventario</h2>
+            <form id="formAgregarProductoInventario">
+                <input type="text" id="codigoProductoInventario" placeholder="Código de barras" required>
+                <input type="text" id="nombreProductoInventario" placeholder="Nombre del producto" required>
+                <select id="categoriaProductoInventario" required>
+                    <option value="">Selecciona una categoría</option>
+                    <option value="Limpieza">Limpieza</option>
+                    <option value="Bebidas">Bebidas</option>
+                    <option value="Lacteos">Lácteos</option>
+                    <option value="Carnes">Carnes</option>
+                    <option value="Verduras">Verduras</option>
+                </select>
+                <input type="number" id="precioProductoInventario" placeholder="Precio de venta" step="0.01" required>
+                <input type="number" id="stockProductoInventario" placeholder="Stock inicial" step="0.01" min="0"
+                    required>
+                <select id="tipoProductoInventario" required>
+                    <option value="unitario">Producto Unitario</option>
+                    <option value="granel">Producto a Granel</option>
+                </select>
+                <button type="submit">Agregar Producto</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="modalEditarProductoInventario" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="cerrarModalEditarProductoInventario()">&times;</span>
+            <h2><i class="fas fa-edit"></i> Editar Producto</h2>
+            <form id="formEditarProductoInventario">
+                <input type="hidden" id="editCodigoOriginal">
+                <input type="text" id="editCodigoProducto" placeholder="Código de barras" required>
+                <input type="text" id="editNombreProducto" placeholder="Nombre del producto" required>
+                <select id="editCategoriaProducto" required>
+                    <option value="">Selecciona una categoría</option>
+                    <option value="Limpieza">Limpieza</option>
+                    <option value="Bebidas">Bebidas</option>
+                    <option value="Lacteos">Lácteos</option>
+                    <option value="Carnes">Carnes</option>
+                    <option value="Verduras">Verduras</option>
+                </select>
+                <input type="number" id="editPrecioProducto" placeholder="Precio de venta" step="0.01" required>
+                <input type="number" id="editStockProducto" placeholder="Stock" step="0.01" min="0" required>
+                <select id="editTipoProducto" required>
+                    <option value="unitario">Producto Unitario</option>
+                    <option value="granel">Producto a Granel</option>
+                </select>
+                <button type="submit">Guardar Cambios</button>
+            </form>
+        </div>
+    </div>
+    <div id="modalBaseDatosUsuarios" class="modal">
+        <div class="modal-content"
+            style="max-width: 950px; width: 95%; max-height: 85vh; margin: 3% auto; display: flex; flex-direction: column;">
+            <span class="close" onclick="cerrarModalBaseDatosUsuarios()">&times;</span>
+            <h2 style="margin-bottom: 20px; flex-shrink: 0;"><i class="fas fa-database"></i> Base de Datos de Usuarios
+            </h2>
+
+            <div style="overflow-y: auto; flex: 1; padding-right: 5px;">
+                <div style="margin-bottom: 25px;">
+                    <h3
+                        style="color: #667eea; margin-bottom: 12px; border-bottom: 2px solid #667eea; padding-bottom: 8px;">
+                        <i class="fas fa-user-tie"></i> Empleados
+                    </h3>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; min-width: 600px;">
+                            <thead>
+                                <tr style="background: #667eea; color: white;">
+                                    <th style="padding: 10px; text-align: left;">ID</th>
+                                    <th style="padding: 10px; text-align: left;">Nombre</th>
+                                    <th style="padding: 10px; text-align: left;">Apellido</th>
+                                    <th style="padding: 10px; text-align: left;">Usuario</th>
+                                    <th style="padding: 10px; text-align: left;">Fecha de Creacion</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaEmpleadosBD">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div>
+                    <h3
+                        style="color: #48bb78; margin-bottom: 12px; border-bottom: 2px solid #48bb78; padding-bottom: 8px;">
+                        <i class="fas fa-user"></i> Clientes
+                    </h3>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse; min-width: 700px;">
+                            <thead>
+                                <tr style="background: #48bb78; color: white;">
+                                    <th style="padding: 10px; text-align: left;">ID</th>
+                                    <th style="padding: 10px; text-align: left;">Nombre</th>
+                                    <th style="padding: 10px; text-align: left;">Apellido</th>
+                                    <th style="padding: 10px; text-align: left;">Email</th>
+                                    <th style="padding: 10px; text-align: left;">Telefono</th>
+                                    <th style="padding: 10px; text-align: center;">Puntos</th>
+                                    <th style="padding: 10px; text-align: left;">Fecha de Registro</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaClientesBD">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="cerrarModalBaseDatosUsuarios()" class="btn-cerrar"
+                style="margin-top: 15px; width: 100%; flex-shrink: 0;">Cerrar</button>
+        </div>
+    </div>
+
+    <script src="/static/script.js"></script>
+
+</body>
+
+</html>

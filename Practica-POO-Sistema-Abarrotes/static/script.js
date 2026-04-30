@@ -48,7 +48,143 @@ document.addEventListener('DOMContentLoaded', () => {
                 mostrarNotificacion('Error al registrar cliente', 'error');
             });
     });
+
+    document.getElementById('formRegistroEmpleado').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const nombre = document.getElementById('regNombre').value;
+        const username = document.getElementById('regUsername').value;
+        const password = document.getElementById('regPassword').value;
+
+        if (!nombre || !username || !password) {
+            mostrarNotificacion('Completa todos los campos', 'error');
+            return;
+        }
+
+        fetch('/api/empleados/registrar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nombre: nombre, username: username, password: password })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    mostrarNotificacion('Empleado registrado exitosamente', 'success');
+                    cerrarModalRegistroEmpleado();
+                } else {
+                    mostrarNotificacion('Error: ' + data.detail, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                mostrarNotificacion('Error al registrar empleado', 'error');
+            });
+    });
+
+    document.getElementById('formAgregarProductoInventario').addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const producto = {
+            tipo: document.getElementById('tipoProductoInventario').value,
+            codigoBarra: document.getElementById('codigoProductoInventario').value,
+            nombre: document.getElementById('nombreProductoInventario').value,
+            categoria: document.getElementById('categoriaProductoInventario').value,
+            precioCompra: 0,
+            precioVenta: parseFloat(document.getElementById('precioProductoInventario').value),
+            stock: parseFloat(document.getElementById('stockProductoInventario').value),
+            imagen_url: "default.jpg"
+        };
+
+        if (!producto.codigoBarra || !producto.nombre || !producto.categoria) {
+            mostrarNotificacion('Completa todos los campos', 'error');
+            return;
+        }
+
+        if (producto.stock < 0) {
+            mostrarNotificacion('El stock no puede ser negativo', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/productos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(producto)
+            });
+
+            if (response.ok) {
+                mostrarNotificacion('Producto agregado exitosamente', 'success');
+                cerrarModalAgregarProductoInventario();
+                await cargarInventario();
+                await cargarProductos();
+            } else {
+                const error = await response.json();
+                mostrarNotificacion('Error: ' + error.detail, 'error');
+            }
+        } catch (error) {
+            console.error('Error agregando producto:', error);
+            mostrarNotificacion('Error al agregar producto', 'error');
+        }
+    });
+
+    document.getElementById('formEditarProductoInventario').addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const codigoOriginal = document.getElementById('editCodigoOriginal').value;
+
+        const producto = {
+            tipo: document.getElementById('editTipoProducto').value,
+            codigoBarra: document.getElementById('editCodigoProducto').value,
+            nombre: document.getElementById('editNombreProducto').value,
+            categoria: document.getElementById('editCategoriaProducto').value,
+            precioCompra: 0,
+            precioVenta: parseFloat(document.getElementById('editPrecioProducto').value),
+            stock: parseFloat(document.getElementById('editStockProducto').value),
+            imagen_url: "default.jpg"
+        };
+
+        try {
+            if (codigoOriginal !== producto.codigoBarra) {
+                await fetch(`/api/productos/${codigoOriginal}`, { method: 'DELETE' });
+            }
+
+            const response = await fetch('/api/productos', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(producto)
+            });
+
+            if (response.ok) {
+                mostrarNotificacion('Producto actualizado exitosamente', 'success');
+                cerrarModalEditarProductoInventario();
+                await cargarInventario();
+                await cargarProductos();
+            } else {
+                const error = await response.json();
+                mostrarNotificacion('Error: ' + error.detail, 'error');
+            }
+        } catch (error) {
+            console.error('Error actualizando producto:', error);
+            mostrarNotificacion('Error al actualizar producto', 'error');
+        }
+    });
+
+    const btnCerrarAdvertenciaSesion = document.getElementById('btnCerrarAdvertenciaSesion');
+    if (btnCerrarAdvertenciaSesion) {
+        btnCerrarAdvertenciaSesion.addEventListener('click', function () {
+            document.getElementById('modalAdvertenciaCerrarSesion').style.display = 'none';
+        });
+    }
+
+    const btnCerrarAdvertenciaVenta = document.getElementById('btnCerrarAdvertenciaVenta');
+    if (btnCerrarAdvertenciaVenta) {
+        btnCerrarAdvertenciaVenta.addEventListener('click', function () {
+            document.getElementById('modalAdvertenciaVenta').style.display = 'none';
+        });
+    }
 });
+
+
 
 function seleccionarRol(rol) {
     rolActual = rol;
@@ -289,11 +425,21 @@ document.addEventListener('keypress', function (event) {
 });
 
 function cerrarSesion() {
+    if (ventaActual && ventaActual.carrito && ventaActual.carrito.length > 0) {
+        document.getElementById('modalAdvertenciaCerrarSesion').style.display = 'block';
+        return;
+    }
+    if (ventaActualEmpleado && ventaActualEmpleado.carrito && ventaActualEmpleado.carrito.length > 0) {
+        document.getElementById('modalAdvertenciaCerrarSesion').style.display = 'block';
+        return;
+    }
+
     rolActual = null;
     document.getElementById('contenidoPrincipal').style.display = 'none';
     document.getElementById('menuInicial').style.display = 'flex';
     productos = [];
     ventaActual = null;
+    ventaActualEmpleado = null;
 }
 
 async function cargarProductos() {
@@ -523,6 +669,11 @@ async function registrarCliente(event) {
 }
 
 async function nuevaVenta() {
+    if (ventaActual && ventaActual.carrito && ventaActual.carrito.length > 0) {
+        document.getElementById('modalAdvertenciaVenta').style.display = 'block';
+        return;
+    }
+
     folioContador++;
     const folio = `F-${folioContador}`;
     const telefonoCliente = document.getElementById('clienteSelect').value;
@@ -546,6 +697,7 @@ async function nuevaVenta() {
             document.getElementById('valorDescuento').value = '';
             document.getElementById('categoriaDescuento').value = '';
             toggleCamposDescuento();
+            await cargarProductos();
         } else {
             mostrarNotificacion('Error al crear nueva venta', 'error');
         }
@@ -582,18 +734,6 @@ async function agregarAlCarrito(codigoBarra) {
         mostrarNotificacion('Error al cargar producto', 'error');
     }
 }
-
-productoPendiente = producto;
-
-const mensaje = producto.tipo === 'ProductoUnitario'
-    ? `¿Cuántas unidades de ${producto.nombre} deseas agregar?`
-    : `¿Cuántos kilos/gramos de ${producto.nombre} deseas agregar?`;
-
-document.getElementById('mensajeCantidad').textContent = mensaje;
-document.getElementById('inputCantidad').value = '1';
-document.getElementById('inputCantidad').step = producto.tipo === 'ProductoUnitario' ? '1' : '0.1';
-document.getElementById('modalCantidad').style.display = 'block';
-document.getElementById('inputCantidad').focus();
 
 function cerrarModalCantidad() {
     document.getElementById('modalCantidad').style.display = 'none';
@@ -808,55 +948,23 @@ async function aplicarDescuento() {
 }
 
 async function finalizarVenta() {
-    if (!ventaActual.carrito || ventaActual.carrito.length === 0) {
+    if (!ventaActual || !ventaActual.carrito || ventaActual.carrito.length === 0) {
         mostrarNotificacion('No hay productos en el carrito', 'error');
         return;
     }
 
-    const totalMostrar = ventaActual.total.toFixed(2);
-    document.getElementById('totalConfirmar').textContent = `$${totalMostrar}`;
-    document.getElementById('modalConfirmarCompra').style.display = 'block';
-}
-
-function cerrarModalConfirmarCompra() {
-    document.getElementById('modalConfirmarCompra').style.display = 'none';
-}
-
-async function confirmarCompra() {
-    cerrarModalConfirmarCompra();
-
-    try {
-        const response = await fetch('/api/ventas/finalizar', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            mostrarTicket(result.ticket);
-            mostrarNotificacion(`Venta completada. Puntos ganados: ${result.puntos_ganados}`, 'success');
-            await cargarProductos();
-            await cargarClientes();
-            await nuevaVenta();
-
-            if (rolActual === 'empleado' && document.getElementById('mainContentEmpleado').style.display === 'block') {
-                let periodoActivo = 'dia';
-                const botonActivo = document.querySelector('.btn-periodo[style*="background: #764ba2"]');
-                if (botonActivo) {
-                    if (botonActivo.textContent.includes('Hoy')) periodoActivo = 'dia';
-                    else if (botonActivo.textContent.includes('Semana')) periodoActivo = 'semana';
-                    else if (botonActivo.textContent.includes('Mes')) periodoActivo = 'mes';
-                }
-                await cargarReporte(periodoActivo);
-            }
-        } else {
-            mostrarNotificacion(result.error || 'Error al finalizar venta', 'error');
-        }
-    } catch (error) {
-        console.error('Error finalizando venta:', error);
-        mostrarNotificacion('Error al finalizar venta', 'error');
+    if (!ventaActual.total || ventaActual.total === 0) {
+        ventaActual.subtotal = ventaActual.carrito.reduce(function (sum, item) {
+            return sum + item.subtotal_detalle;
+        }, 0);
+        ventaActual.impuestos = ventaActual.carrito.reduce(function (sum, item) {
+            return sum + (item.impuesto_detalle || 0);
+        }, 0);
+        ventaActual.total = ventaActual.subtotal + ventaActual.impuestos - (ventaActual.descuento || 0);
     }
+
+    document.getElementById('totalConfirmar').textContent = '$' + ventaActual.total.toFixed(2);
+    document.getElementById('modalConfirmarCompra').style.display = 'block';
 }
 
 function mostrarTicket(ticket) {
@@ -917,6 +1025,46 @@ function cerrarModalTicket() {
     modal.style.display = 'none';
     const printBtn = modal.querySelector('.btn-print');
     if (printBtn) printBtn.remove();
+}
+
+function cerrarModalAdvertenciaVenta() {
+    document.getElementById('modalAdvertenciaVenta').style.display = 'none';
+}
+
+function cerrarModalConfirmarCompra() {
+    document.getElementById('modalConfirmarCompra').style.display = 'none';
+}
+
+async function confirmarCompra() {
+    cerrarModalConfirmarCompra();
+
+    try {
+        const response = await fetch('/api/ventas/finalizar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            mostrarTicket(result.ticket);
+            mostrarNotificacion('Venta completada. Puntos ganados: ' + result.puntos_ganados, 'success');
+            await cargarProductos();
+            await cargarClientes();
+            ventaActual = null;
+            await nuevaVenta();
+
+            if (rolActual === 'empleado') {
+                await cargarInventarioEmpleado();
+                await cargarReporteEmpleado('dia');
+            }
+        } else {
+            mostrarNotificacion(result.error || 'Error al finalizar venta', 'error');
+        }
+    } catch (error) {
+        console.error('Error finalizando venta:', error);
+        mostrarNotificacion('Error al finalizar venta', 'error');
+    }
 }
 
 function mostrarNotificacion(mensaje, tipo) {
@@ -1396,6 +1544,11 @@ async function eliminarProductoInventarioEmpleado(codigoBarra) {
 }
 
 async function nuevaVentaEmpleado() {
+    if (ventaActualEmpleado && ventaActualEmpleado.carrito && ventaActualEmpleado.carrito.length > 0) {
+        document.getElementById('modalAdvertenciaVenta').style.display = 'block';
+        return;
+    }
+
     folioContadorEmpleado++;
     const folio = `F-${folioContadorEmpleado}`;
     const telefonoCliente = document.getElementById('clienteSelectEmpleado').value;
@@ -1415,6 +1568,7 @@ async function nuevaVentaEmpleado() {
             ventaActualEmpleado = data.venta;
             document.getElementById('folioVentaEmpleado').textContent = `Folio: ${folio}`;
             actualizarCarritoEmpleado();
+            await cargarInventarioEmpleado();
         }
     } catch (error) {
         mostrarNotificacion('Error al crear venta', 'error');
@@ -1548,7 +1702,7 @@ async function aplicarDescuentoEmpleado() {
 }
 
 async function finalizarVentaEmpleado() {
-    if (!ventaActualEmpleado?.carrito?.length) {
+    if (!ventaActualEmpleado || !ventaActualEmpleado.carrito || ventaActualEmpleado.carrito.length === 0) {
         mostrarNotificacion('No hay productos en el carrito', 'error');
         return;
     }
@@ -1566,6 +1720,7 @@ async function finalizarVentaEmpleado() {
             mostrarTicket(result.ticket);
             mostrarNotificacion(`Venta completada. Puntos: ${result.puntos_ganados}`, 'success');
             await cargarInventarioEmpleado();
+            ventaActualEmpleado = null;
             await nuevaVentaEmpleado();
         } else {
             mostrarNotificacion(result.error || 'Error al finalizar', 'error');

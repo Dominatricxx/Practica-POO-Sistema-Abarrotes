@@ -810,6 +810,25 @@ async def aplicar_descuento(descuento: AplicarDescuento):
     )
     return resultado
 
+@app.post("/api/ventas/cancelar")
+async def cancelar_venta():
+    if ctrl_ventas.venta_actual and ctrl_ventas.venta_actual.get('carrito'):
+        for item in ctrl_ventas.venta_actual['carrito']:
+            producto = inventario.buscar(item['producto']['codigoBarra'])
+            if producto:
+                cantidad = item['cantidad']
+                producto._Producto__stock = producto._Producto__stock + cantidad
+                db_conn = sqlite3.connect(inventario.db.db_name)
+                db_cursor = db_conn.cursor()
+                db_cursor.execute(
+                    'UPDATE productos SET stock = ? WHERE codigoBarra = ?',
+                    (producto._Producto__stock, producto.codigoBarra)
+                )
+                db_conn.commit()
+                db_conn.close()
+    ctrl_ventas.venta_actual = None
+    return {"success": True}
+
 @app.post("/api/ventas/finalizar")
 async def finalizar_venta():
     resultado = ctrl_ventas.finalizar_venta()

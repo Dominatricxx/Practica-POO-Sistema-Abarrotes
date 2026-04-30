@@ -140,7 +140,7 @@
 
             <div class="rol-header">
                 <span id="rolActual"></span>
-                <button onclick="cerrarSesion()" class="btn-cerrar-sesion">
+                <button onclick="cerrarSesion()" class="btn-cerrar-sesion" type="button">
                     <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
                 </button>
             </div>
@@ -367,6 +367,26 @@
             <button onclick="cerrarModalTicket()" class="btn-cerrar">Cerrar</button>
         </div>
     </div>
+    <div id="modalConfirmarCompra" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-money-bill-wave"></i> Confirmar Compra</h2>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 10px; color: #333;">¿Confirmar la siguiente compra?</p>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin: 15px 0;">
+                    <p style="margin-bottom: 10px;"><strong>Total a pagar:</strong></p>
+                    <p id="totalConfirmar"
+                        style="font-size: 1.8em; font-weight: bold; color: #667eea; text-align: center;">$0.00</p>
+                </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button onclick="confirmarCompra()" class="btn-verificar" style="flex: 1;">Confirmar</button>
+                    <button onclick="cerrarModalConfirmarCompra()" class="btn-cerrar"
+                        style="flex: 1; background: #a0aec0;">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <div id="modalCantidad" class="modal">
         <div class="modal-content" style="max-width: 350px;">
             <span class="close" onclick="cerrarModalCantidad()">&times;</span>
@@ -385,23 +405,27 @@
             </div>
         </div>
     </div>
-    <div id="modalConfirmarCompra" class="modal">
+    <div id="modalAdvertenciaCerrarSesion" class="modal">
         <div class="modal-content" style="max-width: 400px;">
             <div class="modal-header">
-                <h2><i class="fas fa-money-bill-wave"></i> Confirmar Compra</h2>
+                <h2><i class="fas fa-exclamation-triangle"></i> Aviso</h2>
             </div>
-            <div class="modal-body">
-                <p style="margin-bottom: 10px; color: #333;">¿Confirmar la siguiente compra?</p>
-                <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin: 15px 0;">
-                    <p style="margin-bottom: 10px;"><strong>Total a pagar:</strong></p>
-                    <p id="totalConfirmar"
-                        style="font-size: 1.8em; font-weight: bold; color: #667eea; text-align: center;">$0.00</p>
-                </div>
-                <div style="display: flex; gap: 10px; margin-top: 20px;">
-                    <button onclick="confirmarCompra()" class="btn-verificar" style="flex: 1;">Confirmar</button>
-                    <button onclick="cerrarModalConfirmarCompra()" class="btn-cerrar"
-                        style="flex: 1; background: #a0aec0;">Cancelar</button>
-                </div>
+            <div class="modal-body" style="text-align: center;">
+                <p style="margin-bottom: 20px; color: #333; font-size: 1.1em;">No puedes cerrar sesion hasta que
+                    termines la compra actual</p>
+                <button id="btnCerrarAdvertenciaSesion" class="btn-verificar" style="width: 100%;">Entendido</button>
+            </div>
+        </div>
+    </div>
+    <div id="modalAdvertenciaVenta" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2><i class="fas fa-exclamation-triangle"></i> Aviso</h2>
+            </div>
+            <div class="modal-body" style="text-align: center;">
+                <p style="margin-bottom: 20px; color: #333; font-size: 1.1em;">No puedes realizar una nueva compra hasta
+                    que termines la actual</p>
+                <button id="btnCerrarAdvertenciaVenta" class="btn-verificar" style="width: 100%;">Entendido</button>
             </div>
         </div>
     </div>

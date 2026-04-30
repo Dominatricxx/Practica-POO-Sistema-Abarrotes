@@ -805,6 +805,36 @@ async def verificar_cliente(request: Request):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+@app.delete("/api/clientes/eliminar/{cliente_id}")
+async def eliminar_cliente(cliente_id: str, request: Request):
+    try:
+        data = await request.json()
+        admin_password = data.get("admin_password")
+        admin_password_env = os.getenv('ADMIN_PASSWORD', 'admin123')
+        
+        if admin_password != admin_password_env:
+            raise HTTPException(status_code=403, detail="Contrasena de administrador incorrecta")
+        
+        conn = sqlite3.connect("abarrotes.db")
+        cursor = conn.cursor()
+        
+        cursor.execute('SELECT id FROM clientes WHERE id = ? OR codigo_cliente = ?', (cliente_id, cliente_id))
+        cliente = cursor.fetchone()
+        
+        if not cliente:
+            conn.close()
+            raise HTTPException(status_code=404, detail="Cliente no encontrado")
+        
+        cursor.execute('DELETE FROM clientes WHERE id = ? OR codigo_cliente = ?', (cliente_id, cliente_id))
+        conn.commit()
+        conn.close()
+        
+        return {"success": True, "message": "Cliente eliminado exitosamente"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 @app.post("/api/ventas/nueva")
 async def nueva_venta(request: Request):
     try:
@@ -1117,6 +1147,38 @@ async def verificar_empleado(request: Request):
             return {"success": True, "nombre": nombre + " " + apellido}
         else:
             return {"success": False, "message": "Usuario o contraseña incorrectos"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.delete("/api/empleados/eliminar/{empleado_id}")
+async def eliminar_empleado(empleado_id: int, request: Request):
+    try:
+        data = await request.json()
+        admin_password = data.get("admin_password")
+        admin_password_env = os.getenv('ADMIN_PASSWORD', 'admin123')
+        
+        if admin_password != admin_password_env:
+            raise HTTPException(status_code=403, detail="Contrasena de administrador incorrecta")
+        
+        if empleado_id == 1:
+            raise HTTPException(status_code=403, detail="No se puede eliminar al administrador principal")
+        
+        conn = sqlite3.connect("abarrotes.db")
+        cursor = conn.cursor()
+        cursor.execute('SELECT id FROM empleados WHERE id = ?', (empleado_id,))
+        empleado = cursor.fetchone()
+        
+        if not empleado:
+            conn.close()
+            raise HTTPException(status_code=404, detail="Empleado no encontrado")
+        
+        cursor.execute('DELETE FROM empleados WHERE id = ?', (empleado_id,))
+        conn.commit()
+        conn.close()
+        
+        return {"success": True, "message": "Empleado eliminado exitosamente"}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

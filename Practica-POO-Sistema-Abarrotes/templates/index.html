@@ -650,7 +650,6 @@
             <span class="close" onclick="cerrarModalBaseDatosUsuarios()">&times;</span>
             <h2 style="margin-bottom: 20px; flex-shrink: 0;"><i class="fas fa-database"></i> Base de Datos de Usuarios
             </h2>
-
             <div style="overflow-y: auto; flex: 1; padding-right: 5px;">
                 <div style="margin-bottom: 25px;">
                     <h3
@@ -698,12 +697,102 @@
                     </div>
                 </div>
             </div>
-
+            <div style="display: flex; gap: 10px; margin-top: 15px; flex-shrink: 0;">
+                <button onclick="mostrarOpcionesAgregarUsuario()"
+                    style="flex: 1; padding: 12px; background: #48bb78; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                    <i class="fas fa-user-plus"></i> Agregar Usuario
+                </button>
+                <button onclick="mostrarBusquedaUsuarios()"
+                    style="flex: 1; padding: 12px; background: #4299e1; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                    <i class="fas fa-search"></i> Buscar Usuario
+                </button>
+                <button onclick="mostrarEliminarUsuario()"
+                    style="flex: 1; padding: 12px; background: #f56565; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                    <i class="fas fa-user-minus"></i> Eliminar Usuario
+                </button>
+            </div>
             <button onclick="cerrarModalBaseDatosUsuarios()" class="btn-cerrar"
                 style="margin-top: 15px; width: 100%; flex-shrink: 0;">Cerrar</button>
         </div>
     </div>
+    <div id="modalOpcionesAgregarUsuario" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <span class="close" onclick="cerrarModalOpcionesAgregarUsuario()">&times;</span>
+            <h2><i class="fas fa-user-plus"></i> Seleccionar Tipo de Usuario</h2>
+            <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
+                <button onclick="solicitarPasswordAdminParaRegistro('empleado')"
+                    style="padding: 15px; background: #667eea; color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 1.1em;">
+                    <i class="fas fa-user-tie"></i> Empleado
+                </button>
+                <button onclick="solicitarPasswordAdminParaRegistro('cliente')"
+                    style="padding: 15px; background: #48bb78; color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 1.1em;">
+                    <i class="fas fa-user"></i> Cliente
+                </button>
+            </div>
+        </div>
+    </div>
 
+    <div id="modalPasswordAdminRegistro" class="modal">
+        <div class="modal-content password-modal" style="max-width: 400px;">
+            <span class="close" onclick="cerrarModalPasswordAdminRegistro()">&times;</span>
+            <div class="password-header">
+                <i class="fas fa-lock"></i>
+                <h2>Verificacion de Administrador</h2>
+            </div>
+            <p>Ingresa la contrasena de administrador para continuar</p>
+            <div class="password-input-container" style="flex-direction: column; gap: 10px;">
+                <input type="password" id="passwordAdminRegistro" placeholder="Contrasena de administrador"
+                    autocomplete="off" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px;">
+                <button type="button" onclick="verificarPasswordAdminRegistro()" class="btn-verificar"
+                    style="width:100%;">Verificar</button>
+            </div>
+            <div id="passwordAdminRegistroError" class="password-error"></div>
+        </div>
+    </div>
+
+    <div id="modalBusquedaUsuarios" class="modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <span class="close" onclick="cerrarModalBusquedaUsuarios()">&times;</span>
+            <h2><i class="fas fa-search"></i> Buscar Usuario</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                <input type="text" id="busquedaId" placeholder="ID">
+                <input type="text" id="busquedaNombre" placeholder="Nombre">
+                <input type="text" id="busquedaApellido" placeholder="Apellido">
+                <input type="text" id="busquedaCorreo" placeholder="Correo">
+                <input type="text" id="busquedaTelefono" placeholder="Telefono" style="grid-column: 1 / -1;">
+            </div>
+            <button onclick="realizarBusquedaUsuarios()"
+                style="width: 100%; padding: 12px; background: #4299e1; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; margin-bottom: 15px;">
+                <i class="fas fa-search"></i> Buscar
+            </button>
+            <div id="resultadosBusqueda" style="max-height: 400px; overflow-y: auto;"></div>
+        </div>
+    </div>
+
+    <div id="modalEliminarUsuario" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <span class="close" onclick="cerrarModalEliminarUsuario()">&times;</span>
+            <h2><i class="fas fa-user-minus"></i> Eliminar Usuario</h2>
+            <div style="margin-top: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: bold;">Seleccionar tipo de
+                    usuario:</label>
+                <select id="tipoUsuarioEliminar"
+                    style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 15px;">
+                    <option value="empleado">Empleado</option>
+                    <option value="cliente">Cliente</option>
+                </select>
+                <input type="text" id="idUsuarioEliminar" placeholder="ID del usuario a eliminar"
+                    style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 15px;">
+                <input type="password" id="passwordAdminEliminar" placeholder="Contrasena de administrador"
+                    style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 15px;">
+                <button onclick="eliminarUsuario()"
+                    style="width: 100%; padding: 12px; background: #f56565; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                    <i class="fas fa-trash"></i> Eliminar Usuario
+                </button>
+                <div id="eliminarUsuarioError" style="color: #e53e3e; margin-top: 10px; text-align: center;"></div>
+            </div>
+        </div>
+    </div>
     <script src="/static/script.js"></script>
 
 </body>

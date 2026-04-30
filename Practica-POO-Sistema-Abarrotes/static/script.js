@@ -6,6 +6,7 @@ let productoPendiente = null;
 let productosFiltrados = [];
 let intentosFallidosEmpleado = 0;
 let intentosFallidosCliente = 0;
+let tipoUsuarioARegistrar = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('formProducto').addEventListener('submit', registrarProducto);
@@ -1489,6 +1490,294 @@ function actualizarPuntosCliente() {
         .catch(error => console.error('Error actualizando puntos:', error));
 }
 
+function mostrarOpcionesAgregarUsuario() {
+    document.getElementById('modalOpcionesAgregarUsuario').style.display = 'block';
+}
+
+function cerrarModalOpcionesAgregarUsuario() {
+    document.getElementById('modalOpcionesAgregarUsuario').style.display = 'none';
+}
+
+function solicitarPasswordAdminParaRegistro(tipo) {
+    cerrarModalOpcionesAgregarUsuario();
+    tipoUsuarioARegistrar = tipo;
+    document.getElementById('modalPasswordAdminRegistro').style.display = 'block';
+    document.getElementById('passwordAdminRegistro').value = '';
+    document.getElementById('passwordAdminRegistroError').innerHTML = '';
+}
+
+function cerrarModalPasswordAdminRegistro() {
+    document.getElementById('modalPasswordAdminRegistro').style.display = 'none';
+    tipoUsuarioARegistrar = null;
+}
+
+function verificarPasswordAdminRegistro() {
+    const password = document.getElementById('passwordAdminRegistro').value;
+    if (!password) {
+        document.getElementById('passwordAdminRegistroError').innerHTML = 'Ingresa la contrasena de administrador';
+        return;
+    }
+    fetch('/api/empleados/verificar-admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: password })
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                cerrarModalPasswordAdminRegistro();
+                if (tipoUsuarioARegistrar === 'empleado') {
+                    mostrarRegistroEmpleado();
+                } else if (tipoUsuarioARegistrar === 'cliente') {
+                    mostrarRegistroCliente();
+                }
+                tipoUsuarioARegistrar = null;
+            } else {
+                document.getElementById('passwordAdminRegistroError').innerHTML = 'Contrasena incorrecta';
+                document.getElementById('passwordAdminRegistro').value = '';
+            }
+        })
+        .catch(error => {
+            document.getElementById('passwordAdminRegistroError').innerHTML = 'Error al verificar';
+        });
+}
+
+function mostrarBusquedaUsuarios() {
+    document.getElementById('modalBusquedaUsuarios').style.display = 'block';
+    document.getElementById('busquedaId').value = '';
+    document.getElementById('busquedaNombre').value = '';
+    document.getElementById('busquedaApellido').value = '';
+    document.getElementById('busquedaCorreo').value = '';
+    document.getElementById('busquedaTelefono').value = '';
+    document.getElementById('resultadosBusqueda').innerHTML = '';
+}
+
+function cerrarModalBusquedaUsuarios() {
+    document.getElementById('modalBusquedaUsuarios').style.display = 'none';
+}
+
+async function realizarBusquedaUsuarios() {
+    const id = document.getElementById('busquedaId').value.trim();
+    const nombre = document.getElementById('busquedaNombre').value.trim();
+    const apellido = document.getElementById('busquedaApellido').value.trim();
+    const correo = document.getElementById('busquedaCorreo').value.trim();
+    const telefono = document.getElementById('busquedaTelefono').value.trim();
+
+    if (!id && !nombre && !apellido && !correo && !telefono) {
+        document.getElementById('resultadosBusqueda').innerHTML = '<p style="text-align: center; color: #e53e3e;">Debes llenar al menos un campo</p>';
+        return;
+    }
+
+    try {
+        const responseEmpleados = await fetch('/api/empleados/listar');
+        const empleados = await responseEmpleados.json();
+
+        const responseClientes = await fetch('/api/clientes');
+        const clientes = await responseClientes.json();
+
+        let resultados = [];
+
+        empleados.forEach(e => {
+            let coincide = false;
+            if (id && e.id.toString() === id) coincide = true;
+            if (nombre && e.nombre.toLowerCase().includes(nombre.toLowerCase())) coincide = true;
+            if (apellido && e.apellido.toLowerCase().includes(apellido.toLowerCase())) coincide = true;
+            if (!id && !nombre && !apellido && !correo && !telefono) coincide = false;
+
+            if (!id && !nombre && !apellido && !coincide) {
+                if (correo || telefono) coincide = false;
+            }
+
+            if (coincide || (id && e.id.toString() === id) || (nombre && e.nombre.toLowerCase().includes(nombre.toLowerCase())) || (apellido && e.apellido.toLowerCase().includes(apellido.toLowerCase()))) {
+                coincide = true;
+            }
+
+            if (coincide) {
+                if ((!correo && !telefono) || (correo && telefono)) {
+                    resultados.push({
+                        tipo: 'Empleado',
+                        id: e.id,
+                        nombre: e.nombre,
+                        apellido: e.apellido,
+                        correo: 'N/A',
+                        telefono: 'N/A',
+                        username: e.username
+                    });
+                }
+            }
+        });
+
+        if (!correo || correo === '') {
+            empleados.forEach(e => {
+                let coincide = false;
+                if (id && e.id.toString() === id) coincide = true;
+                else if (nombre && e.nombre.toLowerCase().includes(nombre.toLowerCase())) coincide = true;
+                else if (apellido && e.apellido.toLowerCase().includes(apellido.toLowerCase())) coincide = true;
+                else if (!id && !nombre && !apellido && !apellido) coincide = true;
+
+                if (coincide && !resultados.some(r => r.tipo === 'Empleado' && r.id === e.id)) {
+                    resultados.push({
+                        tipo: 'Empleado',
+                        id: e.id,
+                        nombre: e.nombre,
+                        apellido: e.apellido,
+                        correo: 'N/A',
+                        telefono: 'N/A',
+                        username: e.username
+                    });
+                }
+            });
+        }
+
+        clientes.forEach(c => {
+            let coincide = false;
+            if (id && c.codigo_cliente && c.codigo_cliente.toString() === id) coincide = true;
+            if (nombre && c.nombre && c.nombre.toLowerCase().includes(nombre.toLowerCase())) coincide = true;
+            if (apellido && c.apellido && c.apellido.toLowerCase().includes(apellido.toLowerCase())) coincide = true;
+            if (correo && c.email && c.email.toLowerCase().includes(correo.toLowerCase())) coincide = true;
+            if (telefono && c.telefono && c.telefono.includes(telefono)) coincide = true;
+
+            if (!id && !nombre && !apellido && !correo && !telefono) coincide = false;
+            else if (!id && !nombre && !apellido && !correo && !telefono) coincide = false;
+
+            if (coincide) {
+                resultados.push({
+                    tipo: 'Cliente',
+                    id: c.id || c.codigo_cliente,
+                    nombre: c.nombre,
+                    apellido: c.apellido || '',
+                    correo: c.email || 'No registrado',
+                    telefono: c.telefono,
+                    username: 'N/A'
+                });
+            }
+        });
+
+        if (resultados.length === 0) {
+            document.getElementById('resultadosBusqueda').innerHTML = '<p style="text-align: center; padding: 20px; color: #999;">No se encontraron usuarios con los criterios especificados</p>';
+            return;
+        }
+
+        let html = '<table style="width: 100%; border-collapse: collapse;">';
+        html += '<thead><tr style="background: #4299e1; color: white;"><th style="padding: 10px;">Tipo</th><th style="padding: 10px;">ID</th><th style="padding: 10px;">Nombre</th><th style="padding: 10px;">Apellido</th><th style="padding: 10px;">Correo/Usuario</th><th style="padding: 10px;">Telefono</th></tr></thead><tbody>';
+
+        resultados.forEach((r, index) => {
+            html += `<tr style="background: ${index % 2 === 0 ? '#f8f9fa' : 'white'};"><td style="padding: 10px;">${r.tipo}</td><td style="padding: 10px;">${r.id}</td><td style="padding: 10px;">${escapeHtml(r.nombre)}</td><td style="padding: 10px;">${escapeHtml(r.apellido)}</td><td style="padding: 10px;">${escapeHtml(r.correo !== 'N/A' ? r.correo : r.username)}</td><td style="padding: 10px;">${escapeHtml(r.telefono)}</td></tr>`;
+        });
+
+        html += '</tbody></table>';
+        document.getElementById('resultadosBusqueda').innerHTML = html;
+
+    } catch (error) {
+        console.error('Error buscando usuarios:', error);
+        document.getElementById('resultadosBusqueda').innerHTML = '<p style="text-align: center; color: #e53e3e;">Error al realizar la busqueda</p>';
+    }
+}
+
+function mostrarEliminarUsuario() {
+    document.getElementById('modalEliminarUsuario').style.display = 'block';
+    document.getElementById('idUsuarioEliminar').value = '';
+    document.getElementById('passwordAdminEliminar').value = '';
+    document.getElementById('eliminarUsuarioError').innerHTML = '';
+}
+
+function cerrarModalEliminarUsuario() {
+    document.getElementById('modalEliminarUsuario').style.display = 'none';
+}
+
+async function eliminarUsuario() {
+    const tipo = document.getElementById('tipoUsuarioEliminar').value;
+    const id = document.getElementById('idUsuarioEliminar').value.trim();
+    const password = document.getElementById('passwordAdminEliminar').value;
+
+    if (!id || !password) {
+        document.getElementById('eliminarUsuarioError').innerHTML = 'Completa todos los campos';
+        return;
+    }
+
+    const textoRolActual = document.getElementById('rolActual').textContent || document.getElementById('rolActual').innerText || '';
+
+    try {
+        const adminResponse = await fetch('/api/empleados/verificar-admin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: password })
+        });
+        const adminData = await adminResponse.json();
+
+        if (!adminData.success) {
+            document.getElementById('eliminarUsuarioError').innerHTML = 'Contrasena de administrador incorrecta';
+            return;
+        }
+
+        if (tipo === 'empleado') {
+            const empResponse = await fetch('/api/empleados/listar');
+            const empleados = await empResponse.json();
+            const empleadoAEliminar = empleados.find(e => e.id.toString() === id);
+
+            if (!empleadoAEliminar) {
+                document.getElementById('eliminarUsuarioError').innerHTML = 'Empleado no encontrado';
+                return;
+            }
+
+            if (empleadoAEliminar.id === 1) {
+                document.getElementById('eliminarUsuarioError').innerHTML = 'No se puede eliminar al administrador principal';
+                return;
+            }
+
+            const textoRolActual = document.getElementById('rolActual').textContent || document.getElementById('rolActual').innerText || '';
+            if (textoRolActual.includes('Empleado')) {
+                const usuarioActual = textoRolActual.replace(/<i[^>]*><\/i>/g, '').replace('Empleado:', '').trim();
+                const partesUsuario = usuarioActual.split(' ');
+                if (partesUsuario.length >= 1) {
+                    const nombreActual = partesUsuario[0];
+                    if (empleadoAEliminar.nombre === nombreActual) {
+                        document.getElementById('eliminarUsuarioError').innerHTML = 'No puedes eliminar tu propio usuario';
+                        return;
+                    }
+                }
+            }
+
+            const deleteResponse = await fetch(`/api/empleados/eliminar/${id}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ admin_password: password })
+            });
+
+            if (deleteResponse.ok) {
+                mostrarNotificacion('Empleado eliminado exitosamente', 'success');
+                cerrarModalEliminarUsuario();
+                if (document.getElementById('modalBaseDatosUsuarios').style.display === 'block') {
+                    cargarEmpleadosBD();
+                }
+            } else {
+                const error = await deleteResponse.json();
+                document.getElementById('eliminarUsuarioError').innerHTML = error.detail || 'Error al eliminar empleado';
+            }
+        } else if (tipo === 'cliente') {
+            const deleteResponse = await fetch(`/api/clientes/eliminar/${id}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ admin_password: password })
+            });
+
+            if (deleteResponse.ok) {
+                mostrarNotificacion('Cliente eliminado exitosamente', 'success');
+                cerrarModalEliminarUsuario();
+                if (document.getElementById('modalBaseDatosUsuarios').style.display === 'block') {
+                    cargarClientesBD();
+                }
+            } else {
+                const error = await deleteResponse.json();
+                document.getElementById('eliminarUsuarioError').innerHTML = error.detail || 'Error al eliminar cliente';
+            }
+        }
+    } catch (error) {
+        console.error('Error eliminando usuario:', error);
+        document.getElementById('eliminarUsuarioError').innerHTML = 'Error al procesar la solicitud';
+    }
+}
+
 function formatearNombre(texto) {
     if (!texto) return '';
     return texto.toLowerCase().replace(/(?:^|\s)\S/g, function (letra) {
@@ -2311,6 +2600,19 @@ window.onclick = function (event) {
             }
             if (modal.id === 'modalBaseDatosUsuarios') {
                 document.getElementById('modalBaseDatosUsuarios').style.display = 'none';
+            }
+            if (modal.id === 'modalOpcionesAgregarUsuario') {
+                document.getElementById('modalOpcionesAgregarUsuario').style.display = 'none';
+            }
+            if (modal.id === 'modalPasswordAdminRegistro') {
+                document.getElementById('modalPasswordAdminRegistro').style.display = 'none';
+                tipoUsuarioARegistrar = null;
+            }
+            if (modal.id === 'modalBusquedaUsuarios') {
+                document.getElementById('modalBusquedaUsuarios').style.display = 'none';
+            }
+            if (modal.id === 'modalEliminarUsuario') {
+                document.getElementById('modalEliminarUsuario').style.display = 'none';
             }
         }
     });

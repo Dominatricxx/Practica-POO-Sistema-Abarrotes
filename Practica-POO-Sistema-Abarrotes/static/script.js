@@ -992,10 +992,39 @@ function cerrarModalCanjePuntos() {
     document.getElementById('errorPuntosModal').style.display = 'none';
 }
 
-async function confirmarCanjePuntos() {
-    console.log('=== INICIO confirmarCanjePuntos ===');
-    console.log('ventaActual:', ventaActual);
+async function usarTodosLosPuntos() {
+    if (!ventaActual || !ventaActual.carrito || ventaActual.carrito.length === 0) {
+        mostrarNotificacion('No hay productos en el carrito', 'error');
+        return;
+    }
 
+    const puntosDisponibles = parseInt(document.getElementById('puntosDisponiblesModal').textContent);
+    const totalCompra = ventaActual.subtotal + ventaActual.impuestos - (ventaActual.descuento || 0);
+
+    if (!puntosDisponibles || puntosDisponibles <= 0) {
+        mostrarNotificacion('No tienes puntos disponibles', 'error');
+        return;
+    }
+
+    if (totalCompra <= 0) {
+        mostrarNotificacion('No hay un total de compra valido', 'error');
+        return;
+    }
+
+    const puntosAUsar = Math.min(puntosDisponibles, Math.floor(totalCompra));
+
+    document.getElementById('puntosUsarInput').value = puntosAUsar;
+    document.getElementById('errorPuntosModal').style.display = 'none';
+    document.getElementById('descuentoMostrado').innerHTML = 'Descuento a aplicar: $' + puntosAUsar.toFixed(2);
+
+    if (puntosAUsar < puntosDisponibles) {
+        mostrarNotificacion('Se usaran ' + puntosAUsar + ' puntos (maximo por el total de compra)', 'info');
+    } else if (puntosAUsar === puntosDisponibles) {
+        mostrarNotificacion('Se usaran todos tus puntos: ' + puntosAUsar, 'info');
+    }
+}
+
+async function confirmarCanjePuntos() {
     if (!ventaActual || !ventaActual.carrito || ventaActual.carrito.length === 0) {
         mostrarNotificacion('No hay productos en el carrito', 'error');
         cerrarModalCanjePuntos();
@@ -1004,9 +1033,6 @@ async function confirmarCanjePuntos() {
 
     const puntosUsar = parseInt(document.getElementById('puntosUsarInput').value);
     const maxPuntos = parseInt(document.getElementById('puntosUsarInput').max);
-
-    console.log('puntosUsar:', puntosUsar);
-    console.log('maxPuntos:', maxPuntos);
 
     if (!puntosUsar || isNaN(puntosUsar) || puntosUsar <= 0) {
         mostrarNotificacion('Ingresa una cantidad valida de puntos', 'error');
@@ -1021,27 +1047,20 @@ async function confirmarCanjePuntos() {
     const textoRolActual = document.getElementById('rolActual').textContent || document.getElementById('rolActual').innerText || '';
     const esCliente = textoRolActual.includes('Cliente');
 
-    console.log('esCliente:', esCliente);
-
     let telefonoCliente = null;
     let puntosCliente = 0;
 
     if (esCliente) {
         const partes = textoRolActual.replace('Cliente ', '').trim().split(' ');
         const clienteNombre = partes.join(' ');
-        console.log('clienteNombre:', clienteNombre);
 
         const responseClientes = await fetch('/api/clientes');
         const clientes = await responseClientes.json();
-        console.log('clientes:', clientes);
 
         const clienteEncontrado = clientes.find(c => {
             const nombreCompleto = (c.nombre + ' ' + (c.apellido || '')).trim();
-            console.log('Comparando:', nombreCompleto, 'con', clienteNombre);
             return nombreCompleto.toLowerCase() === clienteNombre.toLowerCase();
         });
-
-        console.log('clienteEncontrado:', clienteEncontrado);
 
         if (clienteEncontrado) {
             telefonoCliente = clienteEncontrado.telefono;
@@ -1049,9 +1068,6 @@ async function confirmarCanjePuntos() {
         }
     } else {
         const clienteSelect = document.getElementById('clienteSelectEmpleado');
-        console.log('clienteSelect:', clienteSelect);
-        console.log('clienteSelect.value:', clienteSelect ? clienteSelect.value : 'null');
-
         if (clienteSelect && clienteSelect.value) {
             telefonoCliente = clienteSelect.value;
             const responseClientes = await fetch('/api/clientes');
@@ -1063,9 +1079,6 @@ async function confirmarCanjePuntos() {
         }
     }
 
-    console.log('telefonoCliente final:', telefonoCliente);
-    console.log('puntosCliente final:', puntosCliente);
-
     if (!telefonoCliente) {
         mostrarNotificacion('No se encontro el cliente para aplicar el descuento', 'error');
         cerrarModalCanjePuntos();
@@ -1074,31 +1087,30 @@ async function confirmarCanjePuntos() {
 
     if (puntosUsar > puntosCliente) {
         mostrarNotificacion(`Puntos insuficientes. Tienes ${puntosCliente} puntos`, 'error');
-        cerrarModalCanjePuntos();
+        return;
+    }
+
+    const totalCompraActual = ventaActual.subtotal + ventaActual.impuestos - (ventaActual.descuento || 0);
+
+    if (puntosUsar > totalCompraActual) {
+        mostrarNotificacion(`El descuento no puede ser mayor al total de la compra ($${totalCompraActual.toFixed(2)})`, 'error');
         return;
     }
 
     const descuentoAplicar = puntosUsar;
 
-    const bodyEnvio = {
-        telefono_cliente: telefonoCliente,
-        puntos_usados: puntosUsar,
-        monto_descuento: descuentoAplicar
-    };
-
-    console.log('Enviando al servidor:', JSON.stringify(bodyEnvio));
-
     try {
         const response = await fetch('/api/ventas/descuento-puntos', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(bodyEnvio)
+            body: JSON.stringify({
+                telefono_cliente: telefonoCliente,
+                puntos_usados: puntosUsar,
+                monto_descuento: descuentoAplicar
+            })
         });
 
-        console.log('Response status:', response.status);
-
         const result = await response.json();
-        console.log('Respuesta del servidor:', result);
 
         if (response.ok && result.success) {
             if (ventaActual) {
@@ -1117,18 +1129,13 @@ async function confirmarCanjePuntos() {
             cerrarModalCanjePuntos();
         } else {
             const mensajeError = result.error || result.detail || 'Error al aplicar descuento por puntos';
-            console.error('Error del servidor:', mensajeError);
             mostrarNotificacion(mensajeError, 'error');
             cerrarModalCanjePuntos();
         }
     } catch (error) {
-        console.error('Error en fetch:', error);
-        console.error('Error details:', error.message);
         mostrarNotificacion('Error de conexion: ' + error.message, 'error');
         cerrarModalCanjePuntos();
     }
-
-    console.log('=== FIN confirmarCanjePuntos ===');
 }
 
 async function confirmarCantidad() {

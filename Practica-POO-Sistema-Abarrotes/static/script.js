@@ -19,6 +19,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const apellido = formatearNombre(document.getElementById('regClienteApellido').value);
         const email = obtenerEmailCompleto('regClienteEmail', 'btnDominioRegistro');
         const telefono = document.getElementById('regClienteTelefono').value;
+        if (!validarTelefono(telefono)) {
+            mostrarNotificacion('El telefono debe contener 10 digitos numericos', 'error');
+            return;
+        }
         const password = document.getElementById('regClientePassword').value;
 
         if (!nombre || !apellido || !email || !telefono || !password) {
@@ -762,6 +766,11 @@ async function registrarCliente(event) {
         return;
     }
 
+    if (!validarTelefono(cliente.telefono)) {
+        mostrarNotificacion('El telefono debe contener 10 digitos numericos', 'error');
+        return;
+    }
+
     try {
         const response = await fetch('/api/clientes', {
             method: 'POST',
@@ -1382,6 +1391,10 @@ document.getElementById('formReestablecerCliente').addEventListener('submit', fu
 
     const email = obtenerEmailCompleto('reestablecerEmailCliente', 'btnDominioReestablecer');
     const telefono = document.getElementById('reestablecerTelefonoCliente').value;
+    if (!validarTelefono(telefono)) {
+        document.getElementById('reestablecerClienteError').innerHTML = 'El telefono debe contener 10 digitos numericos';
+        return;
+    }
     const adminPassword = document.getElementById('reestablecerAdminPasswordCliente').value;
     const nuevaPassword = document.getElementById('reestablecerNuevaPasswordCliente').value;
 
@@ -1879,6 +1892,10 @@ document.addEventListener('DOMContentLoaded', function () {
             const nombre = formatearNombre(document.getElementById('editClienteNombre').value);
             const apellido = formatearNombre(document.getElementById('editClienteApellido').value);
             const telefono = document.getElementById('editClienteTelefono').value;
+            if (!validarTelefono(telefono)) {
+                mostrarNotificacion('El telefono debe contener 10 digitos numericos', 'error');
+                return;
+            }
             const email = document.getElementById('editClienteEmail').value;
             const password = document.getElementById('editClientePassword').value;
             const puntos = parseInt(document.getElementById('editClientePuntos').value) || 0;
@@ -2021,6 +2038,13 @@ function formatearNombre(texto) {
     return texto.toLowerCase().replace(/(?:^|\s)\S/g, function (letra) {
         return letra.toUpperCase();
     });
+}
+
+function validarTelefono(telefono) {
+    if (!telefono) return false;
+    var soloNumeros = telefono.replace(/\D/g, '');
+    if (soloNumeros.length !== 10) return false;
+    return true;
 }
 
 async function actualizarReporteSiVisible() {

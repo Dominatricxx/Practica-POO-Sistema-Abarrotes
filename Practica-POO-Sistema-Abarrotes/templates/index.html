@@ -115,9 +115,9 @@
                             </div>
                         </div>
                     </div>
-                    <input type="tel" id="reestablecerTelefonoCliente" placeholder="Telefono" required>
-                    <input type="password" id="reestablecerAdminPasswordCliente"
-                        placeholder="Contraseña de administrador" required>
+                    <input type="tel" id="reestablecerTelefonoCliente" placeholder="Telefono" required maxlength="10"
+                        oninput="this.value = this.value.replace(/\D/g, '')"> <input type="password"
+                        id="reestablecerAdminPasswordCliente" placeholder="Contraseña de administrador" required>
                     <input type="password" id="reestablecerNuevaPasswordCliente" placeholder="Nueva contraseña"
                         required>
                     <button type="submit">Reestablecer Contraseña</button>
@@ -418,7 +418,8 @@
             <h2><i class="fas fa-user"></i> Registrar Cliente</h2>
             <form id="formCliente">
                 <input type="text" id="nombreCliente" placeholder="Nombre completo" required>
-                <input type="tel" id="telefonoCliente" placeholder="Teléfono" required>
+                <input type="tel" id="telefonoCliente" placeholder="Teléfono" required maxlength="10"
+                    oninput="this.value = this.value.replace(/\D/g, '')">
                 <input type="number" id="puntosCliente" placeholder="Puntos iniciales" value="0">
                 <button type="submit">Registrar Cliente</button>
             </form>
@@ -774,7 +775,8 @@
                         </div>
                     </div>
                 </div>
-                <input type="tel" id="regClienteTelefono" placeholder="Telefono" required>
+                <input type="tel" id="regClienteTelefono" placeholder="Telefono" required maxlength="10"
+                    oninput="this.value = this.value.replace(/\D/g, '')">
                 <input type="password" id="regClientePassword" placeholder="Contrasena" required>
                 <button type="submit">Registrarme</button>
             </form>
@@ -856,8 +858,9 @@
                 <input type="hidden" id="editClienteId">
                 <input type="text" id="editClienteNombre" placeholder="Nombre" required>
                 <input type="text" id="editClienteApellido" placeholder="Apellido" required>
-                <input type="tel" id="editClienteTelefono" placeholder="Telefono" required>
-                <input type="text" id="editClienteEmail" placeholder="Email">
+                <input type="tel" id="editClienteTelefono" placeholder="Telefono" required maxlength="10"
+                    oninput="this.value = this.value.replace(/\D/g, '')"> <input type="text" id="editClienteEmail"
+                    placeholder="Email">
                 <input type="password" id="editClientePassword"
                     placeholder="Nueva contrasena (dejar vacio para no cambiar)">
                 <input type="number" id="editClientePuntos" placeholder="Puntos" min="0">

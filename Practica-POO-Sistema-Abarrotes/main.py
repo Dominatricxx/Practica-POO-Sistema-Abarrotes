@@ -531,7 +531,8 @@ class VentasController:
             'total': 0.0,
             'subtotal': 0.0,
             'impuestos': 0.0,
-            'descuento': 0.0
+            'descuento': 0.0,
+            'puntos_usados': 0
         }
         return self.venta_actual
     def agregar_item(self, codigo, cantidad):
@@ -610,11 +611,14 @@ class VentasController:
         if not self.venta_actual.get('carrito') or len(self.venta_actual['carrito']) == 0:
             return {'error': 'No hay productos en el carrito'}
         
+        puntos_usados_en_venta = self.venta_actual.get('puntos_usados', 0)
         puntos_ganados = 0
+        
         if self.venta_actual['cliente']:
             cliente = self.clientes.get(self.venta_actual['cliente']['telefono'])
             if cliente:
-                puntos_ganados = cliente.acumular_puntos(self.venta_actual['total'])
+                if puntos_usados_en_venta == 0:
+                    puntos_ganados = cliente.acumular_puntos(self.venta_actual['total'])
                 self.venta_actual['cliente'] = cliente.to_dict()
                 self.db.guardar_cliente(cliente)
         
@@ -623,8 +627,7 @@ class VentasController:
             venta_id = self.db.guardar_venta(self.venta_actual, self.venta_actual['carrito'], puntos_ganados)
         except Exception as e:
             return {'error': f'Error al guardar en base de datos: {str(e)}'}
-
-                    
+        
         for detalle in self.venta_actual['carrito']:
             codigo = detalle['producto']['codigoBarra']
             cantidad_vendida = detalle['cantidad']
@@ -642,11 +645,12 @@ class VentasController:
             print(f"Error al guardar ticket en archivo: {e}")
         
         self.ventas_realizadas.append(self.venta_actual)
+        venta_finalizada = self.venta_actual
         self.venta_actual = None
         
         return {
             'ticket': ticket,
-            'venta': self.ventas_realizadas[-1],
+            'venta': venta_finalizada,
             'puntos_ganados': puntos_ganados
         }
 
@@ -957,6 +961,9 @@ async def aplicar_descuento_puntos(request: Request):
             ctrl_ventas.venta_actual['total'] = ctrl_ventas.venta_actual['subtotal'] + ctrl_ventas.venta_actual['impuestos'] - ctrl_ventas.venta_actual['descuento']
             ctrl_ventas.venta_actual['puntos_usados'] = ctrl_ventas.venta_actual.get('puntos_usados', 0) + puntos_usados
         
+        if telefono_cliente in ctrl_ventas.clientes:
+            ctrl_ventas.clientes[telefono_cliente].puntos = nuevos_puntos
+        
         return {
             "success": True,
             "puntos_restantes": nuevos_puntos,
@@ -1015,7 +1022,8 @@ async def cancelar_venta():
     ctrl_ventas.venta_actual = None
     return {
         "success": True,
-        "puntos_devueltos": puntos_a_devolver
+        "puntos_devueltos": puntos_a_devolver,
+        "puntos_usados": ctrl_ventas.venta_actual.get('puntos_usados', 0) if ctrl_ventas.venta_actual else 0
     }
 
 @app.post("/api/ventas/finalizar")

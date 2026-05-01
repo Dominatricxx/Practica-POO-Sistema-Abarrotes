@@ -885,6 +885,7 @@ async function nuevaVenta() {
         const data = await response.json();
         if (data.success) {
             ventaActual = data.venta;
+            ventaActual.puntos_usados = 0;
             document.getElementById('folioVenta').textContent = `Folio: ${folio}`;
             actualizarCarrito();
             document.getElementById('tipoDescuento').value = 'ninguno';
@@ -1135,6 +1136,8 @@ async function confirmarCanjePuntos() {
             if (ventaActual) {
                 ventaActual.descuento = (ventaActual.descuento || 0) + descuentoAplicar;
                 ventaActual.total = ventaActual.subtotal + ventaActual.impuestos - ventaActual.descuento;
+                ventaActual.puntos_usados = puntosUsar;
+                ventaActual.puntos_usados = (ventaActual.puntos_usados || 0) + puntosUsar;
                 actualizarCarrito();
             }
             mostrarNotificacion(`Descuento aplicado: $${descuentoAplicar.toFixed(2)} usando ${puntosUsar} puntos`, 'success');
@@ -1482,6 +1485,17 @@ async function finalizarVenta() {
         ventaActual.total = ventaActual.subtotal + ventaActual.impuestos - (ventaActual.descuento || 0);
     }
 
+    if (ventaActual.puntos_usados && ventaActual.puntos_usados > 0) {
+        try {
+            await fetch('/api/ventas/actual', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (error) {
+            console.error('Error sincronizando venta:', error);
+        }
+    }
+
     document.getElementById('totalConfirmar').textContent = '$' + ventaActual.total.toFixed(2);
     document.getElementById('modalConfirmarCompra').style.display = 'block';
 }
@@ -1621,7 +1635,11 @@ async function confirmarCompra() {
 
         if (result.success) {
             mostrarTicket(result.ticket);
-            mostrarNotificacion('Venta completada. Puntos ganados: ' + result.puntos_ganados, 'success');
+            if (result.puntos_ganados > 0) {
+                mostrarNotificacion('Venta completada. Puntos ganados: ' + result.puntos_ganados, 'success');
+            } else {
+                mostrarNotificacion('Venta completada exitosamente', 'success');
+            }
             await cargarProductos();
             await cargarClientes();
             actualizarPuntosCliente();

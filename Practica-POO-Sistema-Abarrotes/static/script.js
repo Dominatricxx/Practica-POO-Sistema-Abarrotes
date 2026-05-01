@@ -274,6 +274,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!event.target.closest('[id^="btnDominio"]') && !event.target.closest('[id^="dropdownDominio"]')) {
             document.querySelectorAll('[id^="dropdownDominio"]').forEach(d => d.style.display = 'none');
         }
+        if (!event.target.closest('#btnFiltroBD') && !event.target.closest('#dropdownFiltroBD')) {
+            var dropdownFiltro = document.getElementById('dropdownFiltroBD');
+            if (dropdownFiltro) {
+                dropdownFiltro.style.display = 'none';
+            }
+        }
     });
 
     const loginClienteEmailInput = document.getElementById('loginClienteEmail');
@@ -1459,8 +1465,43 @@ document.getElementById('formReestablecerCliente').addEventListener('submit', fu
 
 async function mostrarBaseDatosUsuarios() {
     document.getElementById('modalBaseDatosUsuarios').style.display = 'block';
-    await cargarEmpleadosBD();
-    await cargarClientesBD();
+    filtrarTablaUsuarios('todos');
+}
+
+function toggleDropdownFiltroBD() {
+    var dropdown = document.getElementById('dropdownFiltroBD');
+    if (dropdown.style.display === 'block') {
+        dropdown.style.display = 'none';
+    } else {
+        dropdown.style.display = 'block';
+    }
+}
+
+function seleccionarFiltroBD(filtro, texto, color) {
+    document.getElementById('dropdownFiltroBD').style.display = 'none';
+    document.getElementById('btnFiltroBD').style.background = color;
+    document.getElementById('textoFiltroBD').textContent = texto;
+    filtrarTablaUsuarios(filtro);
+}
+
+function filtrarTablaUsuarios(filtro) {
+    var seccionEmpleados = document.getElementById('seccionEmpleadosBD');
+    var seccionClientes = document.getElementById('seccionClientesBD');
+
+    if (filtro === 'todos') {
+        seccionEmpleados.style.display = 'block';
+        seccionClientes.style.display = 'block';
+        cargarEmpleadosBD();
+        cargarClientesBD();
+    } else if (filtro === 'empleados') {
+        seccionEmpleados.style.display = 'block';
+        seccionClientes.style.display = 'none';
+        cargarEmpleadosBD();
+    } else if (filtro === 'clientes') {
+        seccionEmpleados.style.display = 'none';
+        seccionClientes.style.display = 'block';
+        cargarClientesBD();
+    }
 }
 
 function cerrarModalBaseDatosUsuarios() {

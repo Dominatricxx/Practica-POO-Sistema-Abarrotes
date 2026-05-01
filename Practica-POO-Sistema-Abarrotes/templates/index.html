@@ -595,10 +595,34 @@
         <div class="modal-content"
             style="max-width: 950px; width: 95%; max-height: 85vh; margin: 3% auto; display: flex; flex-direction: column;">
             <span class="close" onclick="cerrarModalBaseDatosUsuarios()">&times;</span>
-            <h2 style="margin-bottom: 20px; flex-shrink: 0;"><i class="fas fa-database"></i> Base de Datos de Usuarios
-            </h2>
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-shrink: 0;">
+                <h2 style="margin: 0;"><i class="fas fa-database"></i> Base de Datos de Usuarios</h2>
+                <div style="position: relative; width: 200px; margin-right: 40px;"> <button
+                        onclick="toggleDropdownFiltroBD()" id="btnFiltroBD"
+                        style="width: 100%; padding: 8px 12px; background: #764ba2; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 0.9em; text-align: left;">
+                        <i class="fas fa-users"></i> <span id="textoFiltroBD">Todos</span> <i
+                            class="fas fa-chevron-down" style="float: right; margin-top: 2px;"></i>
+                    </button>
+                    <div id="dropdownFiltroBD"
+                        style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-radius: 0 0 8px 8px; z-index: 10; box-shadow: 0 4px 8px rgba(0,0,0,0.15);">
+                        <div onclick="seleccionarFiltroBD('todos', 'Todos', '#764ba2')"
+                            style="padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 10px; font-size: 0.9em;">
+                            <i class="fas fa-users" style="color: #764ba2;"></i> Todos
+                        </div>
+                        <div onclick="seleccionarFiltroBD('empleados', 'Empleados', '#667eea')"
+                            style="padding: 10px 12px; cursor: pointer; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 10px; font-size: 0.9em;">
+                            <i class="fas fa-user-tie" style="color: #667eea;"></i> Empleados
+                        </div>
+                        <div onclick="seleccionarFiltroBD('clientes', 'Clientes', '#48bb78')"
+                            style="padding: 10px 12px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-size: 0.9em;">
+                            <i class="fas fa-user" style="color: #48bb78;"></i> Clientes
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div style="overflow-y: auto; flex: 1; padding-right: 5px;">
-                <div style="margin-bottom: 25px;">
+                <div id="seccionEmpleadosBD" style="margin-bottom: 25px;">
                     <h3
                         style="color: #667eea; margin-bottom: 12px; border-bottom: 2px solid #667eea; padding-bottom: 8px;">
                         <i class="fas fa-user-tie"></i> Empleados
@@ -620,7 +644,7 @@
                     </div>
                 </div>
 
-                <div>
+                <div id="seccionClientesBD">
                     <h3
                         style="color: #48bb78; margin-bottom: 12px; border-bottom: 2px solid #48bb78; padding-bottom: 8px;">
                         <i class="fas fa-user"></i> Clientes

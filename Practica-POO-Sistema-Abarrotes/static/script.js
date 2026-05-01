@@ -1122,6 +1122,108 @@ async function aplicarDescuento() {
     }
 }
 
+async function aplicarDescuentoPuntos() {
+    const textoRolActual = document.getElementById('rolActual').textContent || document.getElementById('rolActual').innerText || '';
+    const esCliente = textoRolActual.includes('Cliente');
+
+    let telefonoCliente = null;
+    let puntosCliente = 0;
+
+    if (esCliente) {
+        const partes = textoRolActual.replace('Cliente ', '').trim().split(' ');
+        const clienteNombre = partes.join(' ');
+        const responseClientes = await fetch('/api/clientes');
+        const clientes = await responseClientes.json();
+        const clienteEncontrado = clientes.find(c => {
+            const nombreCompleto = (c.nombre + ' ' + (c.apellido || '')).trim();
+            return nombreCompleto.toLowerCase() === clienteNombre.toLowerCase();
+        });
+        if (clienteEncontrado) {
+            telefonoCliente = clienteEncontrado.telefono;
+            puntosCliente = clienteEncontrado.puntos;
+        }
+    } else {
+        const clienteSelect = document.getElementById('clienteSelectEmpleado');
+        if (clienteSelect && clienteSelect.value) {
+            telefonoCliente = clienteSelect.value;
+            const responseClientes = await fetch('/api/clientes');
+            const clientes = await responseClientes.json();
+            const clienteEncontrado = clientes.find(c => c.telefono === telefonoCliente);
+            if (clienteEncontrado) {
+                puntosCliente = clienteEncontrado.puntos;
+            }
+        }
+    }
+
+    if (!telefonoCliente) {
+        mostrarNotificacion('Debes iniciar sesion como cliente o seleccionar un cliente para usar sus puntos', 'error');
+        return;
+    }
+
+    if (puntosCliente <= 0) {
+        mostrarNotificacion('No tienes puntos disponibles', 'error');
+        return;
+    }
+
+    const totalActual = ventaActual ? ventaActual.total : 0;
+    let descuentoMaximo = Math.min(puntosCliente, totalActual);
+
+    const respuesta = prompt(`Tienes ${puntosCliente} puntos (equivale a $${puntosCliente} de descuento maximo)\nTotal de compra: $${totalActual.toFixed(2)}\n¿Cuántos puntos deseas usar? (maximo ${descuentoMaximo})`);
+
+    if (!respuesta) return;
+
+    const puntosUsar = parseInt(respuesta);
+    if (isNaN(puntosUsar) || puntosUsar <= 0) {
+        mostrarNotificacion('Cantidad de puntos invalida', 'error');
+        return;
+    }
+
+    if (puntosUsar > puntosCliente) {
+        mostrarNotificacion(`Solo tienes ${puntosCliente} puntos disponibles`, 'error');
+        return;
+    }
+
+    if (puntosUsar > totalActual) {
+        mostrarNotificacion(`El descuento no puede ser mayor al total de la compra ($${totalActual.toFixed(2)})`, 'error');
+        return;
+    }
+
+    const descuentoAplicar = puntosUsar;
+
+    try {
+        const response = await fetch('/api/ventas/descuento-puntos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                telefono_cliente: telefonoCliente,
+                puntos_usados: puntosUsar,
+                monto_descuento: descuentoAplicar
+            })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            if (ventaActual) {
+                ventaActual.descuento = (ventaActual.descuento || 0) + descuentoAplicar;
+                ventaActual.total = ventaActual.subtotal + ventaActual.impuestos - ventaActual.descuento;
+                actualizarCarrito();
+            }
+            mostrarNotificacion(`Descuento aplicado: $${descuentoAplicar.toFixed(2)} usando ${puntosUsar} puntos`, 'success');
+            await cargarClientes();
+            const puntosSpan = document.getElementById('cantidadPuntosCliente');
+            if (puntosSpan) {
+                puntosSpan.textContent = puntosCliente - puntosUsar;
+            }
+        } else {
+            mostrarNotificacion(result.error || 'Error al aplicar descuento por puntos', 'error');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        mostrarNotificacion('Error al aplicar descuento por puntos', 'error');
+    }
+}
+
 async function finalizarVenta() {
     if (!ventaActual || !ventaActual.carrito || ventaActual.carrito.length === 0) {
         mostrarNotificacion('No hay productos en el carrito', 'error');
@@ -1280,6 +1382,11 @@ async function confirmarCompra() {
             if (rolActual === 'empleado') {
                 await cargarInventarioEmpleado();
                 await cargarReporteEmpleado('dia');
+            }
+
+            const puntosUsadosEnDescuento = ventaActual ? (ventaActual.descuento || 0) : 0;
+            if (puntosUsadosEnDescuento > 0) {
+                mostrarNotificacion('Los puntos usados en descuento fueron descontados del cliente', 'info');
             }
         } else {
             mostrarNotificacion(result.error || 'Error al finalizar venta', 'error');

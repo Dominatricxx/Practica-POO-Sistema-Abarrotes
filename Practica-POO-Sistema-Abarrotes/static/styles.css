@@ -380,7 +380,9 @@ header {
 }
 
 .btn-cobrar,
-.btn-nueva {
+.btn-nueva,
+.btn-vaciar,
+.btn-puntos {
     padding: 12px;
     border: none;
     border-radius: 8px;
@@ -411,15 +413,25 @@ header {
 }
 
 .btn-vaciar {
-    padding: 12px;
-    border: none;
-    border-radius: 8px;
-    font-size: 1em;
-    cursor: pointer;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
     background: #e53e3e;
     color: white;
-    grid-column: 1 / -1;
+}
+
+.btn-vaciar:hover {
+    background: #c53030;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(229, 62, 62, 0.3);
+}
+
+.btn-puntos {
+    background: #ed8936;
+    color: white;
+}
+
+.btn-puntos:hover {
+    background: #dd6b20;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(237, 137, 54, 0.3);
 }
 
 .btn-vaciar:hover {

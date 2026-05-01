@@ -873,6 +873,53 @@ async def aplicar_descuento(descuento: AplicarDescuento):
     )
     return resultado
 
+@app.post("/api/ventas/descuento-puntos")
+async def aplicar_descuento_puntos(request: Request):
+    try:
+        data = await request.json()
+        telefono_cliente = data.get("telefono_cliente")
+        puntos_usados = data.get("puntos_usados")
+        monto_descuento = data.get("monto_descuento")
+        
+        if not telefono_cliente or not puntos_usados or not monto_descuento:
+            raise HTTPException(status_code=400, detail="Faltan datos requeridos")
+        
+        conn = sqlite3.connect("abarrotes.db")
+        cursor = conn.cursor()
+        
+        cursor.execute('SELECT puntos FROM clientes WHERE telefono = ?', (telefono_cliente,))
+        resultado = cursor.fetchone()
+        
+        if not resultado:
+            conn.close()
+            raise HTTPException(status_code=404, detail="Cliente no encontrado")
+        
+        puntos_actuales = resultado[0]
+        
+        if puntos_usados > puntos_actuales:
+            conn.close()
+            raise HTTPException(status_code=400, detail="Puntos insuficientes")
+        
+        nuevos_puntos = puntos_actuales - puntos_usados
+        
+        cursor.execute('UPDATE clientes SET puntos = ? WHERE telefono = ?', (nuevos_puntos, telefono_cliente))
+        conn.commit()
+        conn.close()
+        
+        if ctrl_ventas.venta_actual:
+            ctrl_ventas.venta_actual['descuento'] = (ctrl_ventas.venta_actual.get('descuento', 0) + monto_descuento)
+            ctrl_ventas.venta_actual['total'] = ctrl_ventas.venta_actual['subtotal'] + ctrl_ventas.venta_actual['impuestos'] - ctrl_ventas.venta_actual['descuento']
+        
+        return {
+            "success": True,
+            "puntos_restantes": nuevos_puntos,
+            "descuento_aplicado": monto_descuento
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 @app.post("/api/ventas/cancelar")
 async def cancelar_venta():
     if ctrl_ventas.venta_actual and ctrl_ventas.venta_actual.get('carrito'):

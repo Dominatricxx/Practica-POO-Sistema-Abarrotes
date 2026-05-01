@@ -329,6 +329,8 @@ function seleccionarRol(rol) {
 
     ocultarTodosModalesAdmin();
 
+    document.getElementById('modalTicket').style.display = 'none';
+
     if (rol === 'empleado') {
         document.getElementById('rolActual').style.display = 'block';
         document.getElementById('saludoCliente').style.display = 'none';
@@ -344,6 +346,13 @@ function seleccionarRol(rol) {
         document.getElementById('descuentoSection').style.display = 'none';
         cargarProductos();
         cargarClientes();
+        ventaActual = null;
+        document.getElementById('carritoItems').innerHTML = '<div class="carrito-vacio">Agrega productos al carrito</div>';
+        document.getElementById('subtotal').textContent = '$0.00';
+        document.getElementById('impuestos').textContent = '$0.00';
+        document.getElementById('descuento').textContent = '-$0.00';
+        document.getElementById('total').textContent = '$0.00';
+        document.getElementById('folioVenta').textContent = '';
         nuevaVenta();
         document.getElementById('rolActual').style.display = 'none';
         document.getElementById('saludoCliente').style.display = 'block';
@@ -414,7 +423,8 @@ function cerrarModalLoginCliente() {
 }
 
 function verificarLoginCliente() {
-    const email = obtenerEmailCompleto('loginClienteEmail', 'btnDominioLogin'); const password = document.getElementById('loginClientePassword').value;
+    const email = obtenerEmailCompleto('loginClienteEmail', 'btnDominioLogin');
+    const password = document.getElementById('loginClientePassword').value;
 
     if (!email || !password) {
         document.getElementById('loginClienteError').innerHTML = 'Por favor ingresa email y contrasena';
@@ -434,6 +444,7 @@ function verificarLoginCliente() {
                 cerrarModalLoginCliente();
                 const nombreCompleto = formatearNombre(data.nombre + ' ' + (data.apellido || ''));
                 const primerNombre = nombreCompleto.split(' ')[0];
+                ventaActual = null;
                 document.getElementById('rolActual').innerHTML = '<i class="fas fa-user"></i> Cliente ' + nombreCompleto;
                 document.getElementById('saludoCliente').innerHTML = '<i class="fas fa-user"></i> Hola ' + primerNombre;
                 document.getElementById('saludoCliente').style.display = 'none';
@@ -469,7 +480,7 @@ function verificarLoginEmpleado() {
     const password = document.getElementById('loginPassword').value;
 
     if (!username || !password) {
-        document.getElementById('loginError').innerHTML = 'Por favor ingresa usuario y contraseña';
+        document.getElementById('loginError').innerHTML = 'Por favor ingresa usuario y contrasena';
         return;
     }
 
@@ -486,11 +497,12 @@ function verificarLoginEmpleado() {
                 cerrarModalLoginEmpleado();
                 const nombreCompleto = formatearNombre(data.nombre);
                 const primerNombre = nombreCompleto.split(' ')[0];
+                ventaActual = null;
                 document.getElementById('rolActual').innerHTML = '<i class="fas fa-user-tie"></i> Empleado: ' + primerNombre + ' | Modo Administracion';
                 seleccionarRol('empleado');
             } else {
                 intentosFallidosEmpleado++;
-                document.getElementById('loginError').innerHTML = data.message || 'Usuario o contraseña incorrectos';
+                document.getElementById('loginError').innerHTML = data.message || 'Usuario o contrasena incorrectos';
                 document.getElementById('loginPassword').value = '';
                 if (intentosFallidosEmpleado >= 3) {
                     document.getElementById('btnReestablecerEmpleado').style.display = 'block';

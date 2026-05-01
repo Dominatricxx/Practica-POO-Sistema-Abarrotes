@@ -267,6 +267,21 @@ class DatabaseManager:
         if resultado:
             return True, resultado[1], resultado[2]
         return False, None, None
+
+    def obtener_ultimo_folio(self):
+        conn = sqlite3.connect(self.db_name)
+        cursor = conn.cursor()
+        cursor.execute('SELECT folio FROM ventas ORDER BY id DESC LIMIT 1')
+        resultado = cursor.fetchone()
+        conn.close()
+        if resultado:
+            folio = resultado[0]
+            if folio.startswith('F-'):
+                try:
+                    return int(folio.split('-')[1])
+                except:
+                    return 100
+        return 100
     
     def listar_empleados(self):
         conn = sqlite3.connect(self.db_name)
@@ -896,8 +911,14 @@ async def nueva_venta(request: Request):
         data = await request.json()
         folio = data.get("folio")
         telefono_cliente = data.get("telefono_cliente")
+        
+        if folio is None:
+            db = DatabaseManager()
+            ultimo_numero = db.obtener_ultimo_folio()
+            folio = f"F-{ultimo_numero + 1}"
+        
         venta = ctrl_ventas.nueva_venta(folio, telefono_cliente)
-        return {"success": True, "venta": venta}
+        return {"success": True, "venta": venta, "folio": folio}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -1539,6 +1560,10 @@ async def obtener_tickets():
     archivos.sort(key=lambda x: x['nombre'], reverse=True)
     
     return {"tickets": archivos}
+
+db = DatabaseManager()
+folio_actual = db.obtener_ultimo_folio()
+print(f"Folio actual: F-{folio_actual}")
 
 if __name__ == "__main__":
     import uvicorn

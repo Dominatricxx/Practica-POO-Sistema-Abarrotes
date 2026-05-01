@@ -1,6 +1,5 @@
 let productos = [];
 let ventaActual = null;
-let folioContador = 100;
 let rolActual = null;
 let productoPendiente = null;
 let productosFiltrados = [];
@@ -945,8 +944,7 @@ async function nuevaVenta() {
         return;
     }
 
-    folioContador++;
-    const folio = `F-${folioContador}`;
+    let folio = null;
     const textoRolActual = document.getElementById('rolActual').textContent || document.getElementById('rolActual').innerText || '';
     const esCliente = textoRolActual.includes('Cliente');
     let telefonoCliente = '';
@@ -970,7 +968,7 @@ async function nuevaVenta() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                folio: folio,
+                folio: null,
                 telefono_cliente: telefonoCliente || null
             })
         });
@@ -979,7 +977,7 @@ async function nuevaVenta() {
         if (data.success) {
             ventaActual = data.venta;
             ventaActual.puntos_usados = 0;
-            document.getElementById('folioVenta').textContent = `Folio: ${folio}`;
+            document.getElementById('folioVenta').textContent = `Folio: ${data.folio}`;
             actualizarCarrito();
             document.getElementById('tipoDescuento').value = 'ninguno';
             document.getElementById('valorDescuento').value = '';
@@ -3029,7 +3027,6 @@ async function eliminarProductoInventario(codigoBarra) {
 }
 
 let ventaActualEmpleado = null;
-let folioContadorEmpleado = 100;
 
 async function cargarInventarioEmpleado(categoriaFiltro) {
     try {
@@ -3124,8 +3121,7 @@ async function nuevaVentaEmpleado() {
         return;
     }
 
-    folioContadorEmpleado++;
-    const folio = `F-${folioContadorEmpleado}`;
+    let folio = null;
     const telefonoCliente = document.getElementById('clienteSelectEmpleado').value;
 
     try {
@@ -3133,7 +3129,7 @@ async function nuevaVentaEmpleado() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                folio: folio,
+                folio: null,
                 telefono_cliente: telefonoCliente || null
             })
         });
@@ -3141,7 +3137,7 @@ async function nuevaVentaEmpleado() {
         const data = await response.json();
         if (data.success) {
             ventaActualEmpleado = data.venta;
-            document.getElementById('folioVentaEmpleado').textContent = `Folio: ${folio}`;
+            document.getElementById('folioVentaEmpleado').textContent = `Folio: ${data.folio}`;
             actualizarCarritoEmpleado();
             await cargarInventarioEmpleado();
         }

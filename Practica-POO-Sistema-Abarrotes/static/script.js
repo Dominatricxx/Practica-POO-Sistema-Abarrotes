@@ -1726,6 +1726,202 @@ function cerrarModalEliminarUsuario() {
     document.getElementById('modalEliminarUsuario').style.display = 'none';
 }
 
+let tipoUsuarioAEditar = null;
+
+function mostrarOpcionesEditarUsuario() {
+    document.getElementById('modalOpcionesEditarUsuario').style.display = 'block';
+}
+
+function cerrarModalOpcionesEditarUsuario() {
+    document.getElementById('modalOpcionesEditarUsuario').style.display = 'none';
+}
+
+function solicitarIdYPasswordEditar(tipo) {
+    cerrarModalOpcionesEditarUsuario();
+    tipoUsuarioAEditar = tipo;
+    document.getElementById('modalSolicitarIdEditar').style.display = 'block';
+    document.getElementById('idUsuarioEditar').value = '';
+    document.getElementById('passwordAdminEditar').value = '';
+    document.getElementById('editarUsuarioError').innerHTML = '';
+}
+
+function cerrarModalSolicitarIdEditar() {
+    document.getElementById('modalSolicitarIdEditar').style.display = 'none';
+    tipoUsuarioAEditar = null;
+}
+
+async function verificarPasswordAdminEditar() {
+    const id = document.getElementById('idUsuarioEditar').value.trim();
+    const password = document.getElementById('passwordAdminEditar').value;
+
+    if (!id || !password) {
+        document.getElementById('editarUsuarioError').innerHTML = 'Completa todos los campos';
+        return;
+    }
+
+    try {
+        const adminResponse = await fetch('/api/empleados/verificar-admin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: password })
+        });
+        const adminData = await adminResponse.json();
+
+        if (!adminData.success) {
+            document.getElementById('editarUsuarioError').innerHTML = 'Contrasena de administrador incorrecta';
+            return;
+        }
+
+        if (tipoUsuarioAEditar === 'empleado') {
+            const empResponse = await fetch('/api/empleados/listar');
+            const empleados = await empResponse.json();
+            const empleado = empleados.find(e => e.id.toString() === id);
+
+            if (!empleado) {
+                document.getElementById('editarUsuarioError').innerHTML = 'Empleado no encontrado';
+                return;
+            }
+
+            document.getElementById('modalSolicitarIdEditar').style.display = 'none';
+            document.getElementById('editEmpleadoId').value = empleado.id;
+            document.getElementById('editEmpleadoNombre').value = empleado.nombre;
+            document.getElementById('editEmpleadoApellido').value = empleado.apellido;
+            document.getElementById('editEmpleadoUsername').value = empleado.username;
+            document.getElementById('editEmpleadoPassword').value = '';
+            document.getElementById('modalEditarEmpleado').style.display = 'block';
+        } else if (tipoUsuarioAEditar === 'cliente') {
+            const cliResponse = await fetch('/api/clientes');
+            const clientes = await cliResponse.json();
+            const cliente = clientes.find(c => c.codigo_cliente && c.codigo_cliente.toString() === id);
+
+            if (!cliente) {
+                document.getElementById('editarUsuarioError').innerHTML = 'Cliente no encontrado';
+                return;
+            }
+
+            document.getElementById('modalSolicitarIdEditar').style.display = 'none';
+            document.getElementById('editClienteId').value = cliente.codigo_cliente;
+            document.getElementById('editClienteNombre').value = cliente.nombre;
+            document.getElementById('editClienteApellido').value = cliente.apellido || '';
+            document.getElementById('editClienteTelefono').value = cliente.telefono;
+            document.getElementById('editClienteEmail').value = cliente.email || '';
+            document.getElementById('editClientePassword').value = '';
+            document.getElementById('editClientePuntos').value = cliente.puntos;
+            document.getElementById('modalEditarCliente').style.display = 'block';
+        }
+    } catch (error) {
+        document.getElementById('editarUsuarioError').innerHTML = 'Error al procesar la solicitud';
+    }
+}
+
+function cerrarModalEditarEmpleado() {
+    document.getElementById('modalEditarEmpleado').style.display = 'none';
+}
+
+function cerrarModalEditarCliente() {
+    document.getElementById('modalEditarCliente').style.display = 'none';
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    var formEditarEmpleado = document.getElementById('formEditarEmpleado');
+    if (formEditarEmpleado) {
+        formEditarEmpleado.addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const id = document.getElementById('editEmpleadoId').value;
+            const nombre = formatearNombre(document.getElementById('editEmpleadoNombre').value);
+            const apellido = formatearNombre(document.getElementById('editEmpleadoApellido').value);
+            const username = document.getElementById('editEmpleadoUsername').value;
+            const password = document.getElementById('editEmpleadoPassword').value;
+
+            if (!nombre || !apellido || !username) {
+                mostrarNotificacion('Completa todos los campos requeridos', 'error');
+                return;
+            }
+
+            const body = {
+                admin_password: document.getElementById('passwordAdminEditar').value,
+                nombre: nombre,
+                apellido: apellido,
+                username: username,
+                password: password
+            };
+
+            fetch('/api/empleados/editar/' + id, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        mostrarNotificacion('Empleado actualizado exitosamente', 'success');
+                        cerrarModalEditarEmpleado();
+                        if (document.getElementById('modalBaseDatosUsuarios').style.display === 'block') {
+                            cargarEmpleadosBD();
+                        }
+                    } else {
+                        mostrarNotificacion('Error: ' + data.detail, 'error');
+                    }
+                })
+                .catch(error => {
+                    mostrarNotificacion('Error al actualizar empleado', 'error');
+                });
+        });
+    }
+
+    var formEditarCliente = document.getElementById('formEditarCliente');
+    if (formEditarCliente) {
+        formEditarCliente.addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            const id = document.getElementById('editClienteId').value;
+            const nombre = formatearNombre(document.getElementById('editClienteNombre').value);
+            const apellido = formatearNombre(document.getElementById('editClienteApellido').value);
+            const telefono = document.getElementById('editClienteTelefono').value;
+            const email = document.getElementById('editClienteEmail').value;
+            const password = document.getElementById('editClientePassword').value;
+            const puntos = parseInt(document.getElementById('editClientePuntos').value) || 0;
+
+            if (!nombre || !apellido || !telefono) {
+                mostrarNotificacion('Completa todos los campos requeridos', 'error');
+                return;
+            }
+
+            const body = {
+                admin_password: document.getElementById('passwordAdminEditar').value,
+                nombre: nombre,
+                apellido: apellido,
+                telefono: telefono,
+                email: email,
+                password: password,
+                puntos: puntos
+            };
+
+            fetch('/api/clientes/editar/' + id, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        mostrarNotificacion('Cliente actualizado exitosamente', 'success');
+                        cerrarModalEditarCliente();
+                        if (document.getElementById('modalBaseDatosUsuarios').style.display === 'block') {
+                            cargarClientesBD();
+                        }
+                    } else {
+                        mostrarNotificacion('Error: ' + data.detail, 'error');
+                    }
+                })
+                .catch(error => {
+                    mostrarNotificacion('Error al actualizar cliente', 'error');
+                });
+        });
+    }
+});
+
 async function eliminarUsuario() {
     const tipo = document.getElementById('tipoUsuarioEliminar').value;
     const id = document.getElementById('idUsuarioEliminar').value.trim();
@@ -2658,6 +2854,19 @@ window.onclick = function (event) {
             }
             if (modal.id === 'modalEliminarUsuario') {
                 document.getElementById('modalEliminarUsuario').style.display = 'none';
+            }
+            if (modal.id === 'modalOpcionesEditarUsuario') {
+                document.getElementById('modalOpcionesEditarUsuario').style.display = 'none';
+            }
+            if (modal.id === 'modalSolicitarIdEditar') {
+                document.getElementById('modalSolicitarIdEditar').style.display = 'none';
+                tipoUsuarioAEditar = null;
+            }
+            if (modal.id === 'modalEditarEmpleado') {
+                document.getElementById('modalEditarEmpleado').style.display = 'none';
+            }
+            if (modal.id === 'modalEditarCliente') {
+                document.getElementById('modalEditarCliente').style.display = 'none';
             }
         }
     });

@@ -1283,6 +1283,89 @@ async def reestablecer_password_cliente(request: Request):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+
+@app.put("/api/empleados/editar/{empleado_id}")
+async def editar_empleado(empleado_id: int, request: Request):
+    data = await request.json()
+    admin_password = data.get("admin_password")
+    nombre = data.get("nombre")
+    apellido = data.get("apellido")
+    username = data.get("username")
+    password = data.get("password")
+    
+    admin_password_env = os.getenv('ADMIN_PASSWORD', 'admin123')
+    if admin_password != admin_password_env:
+        raise HTTPException(status_code=403, detail="Contrasena de administrador incorrecta")
+    
+    conn = sqlite3.connect("abarrotes.db")
+    cursor = conn.cursor()
+    cursor.execute('SELECT id FROM empleados WHERE id = ?', (empleado_id,))
+    empleado = cursor.fetchone()
+    
+    if not empleado:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Empleado no encontrado")
+    
+    cursor.execute('UPDATE empleados SET nombre = ?, apellido = ?, username = ? WHERE id = ?',
+                   (nombre, apellido, username, empleado_id))
+    
+    if password:
+        cursor.execute('UPDATE empleados SET password = ? WHERE id = ?', (password, empleado_id))
+    
+    conn.commit()
+    conn.close()
+    
+    return {"success": True, "message": "Empleado actualizado exitosamente"}
+
+
+@app.put("/api/clientes/editar/{cliente_id}")
+async def editar_cliente(cliente_id: str, request: Request):
+    data = await request.json()
+    admin_password = data.get("admin_password")
+    nombre = data.get("nombre")
+    apellido = data.get("apellido")
+    telefono = data.get("telefono")
+    email = data.get("email")
+    password = data.get("password")
+    puntos = data.get("puntos")
+    
+    admin_password_env = os.getenv('ADMIN_PASSWORD', 'admin123')
+    if admin_password != admin_password_env:
+        raise HTTPException(status_code=403, detail="Contrasena de administrador incorrecta")
+    
+    conn = sqlite3.connect("abarrotes.db")
+    cursor = conn.cursor()
+    cursor.execute('SELECT codigo_cliente, telefono FROM clientes WHERE codigo_cliente = ?', (cliente_id,))
+    cliente = cursor.fetchone()
+    
+    if not cliente:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+    
+    telefono_anterior = cliente[1]
+    
+    cursor.execute('UPDATE clientes SET nombre = ?, apellido = ?, telefono = ?, email = ?, puntos = ? WHERE codigo_cliente = ?',
+                   (nombre, apellido, telefono, email, puntos, cliente_id))
+    
+    if password:
+        cursor.execute('UPDATE clientes SET password = ? WHERE codigo_cliente = ?', (password, cliente_id))
+    
+    conn.commit()
+    conn.close()
+    
+    if telefono_anterior in ctrl_ventas.clientes:
+        cliente_obj = ctrl_ventas.clientes.pop(telefono_anterior)
+        cliente_obj.nombre_cliente = nombre
+        cliente_obj.apellido = apellido
+        cliente_obj.telefono = telefono
+        cliente_obj.email = email
+        cliente_obj.puntos = puntos
+        if password:
+            cliente_obj.password = password
+        ctrl_ventas.clientes[telefono] = cliente_obj
+    
+    return {"success": True, "message": "Cliente actualizado exitosamente"}
+
 if __name__ == "__main__":
     import uvicorn
     print("=" * 50)

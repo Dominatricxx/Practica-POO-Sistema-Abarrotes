@@ -605,13 +605,11 @@
                     <div style="overflow-x: auto;">
                         <table style="width: 100%; border-collapse: collapse; min-width: 600px;">
                             <thead>
-                                <tr style="background: #48bb78; color: white;">
+                                <tr style="background: #667eea; color: white;">
                                     <th style="padding: 10px; text-align: left;">ID</th>
                                     <th style="padding: 10px; text-align: left;">Nombre</th>
                                     <th style="padding: 10px; text-align: left;">Apellido</th>
-                                    <th style="padding: 10px; text-align: left;">Email</th>
-                                    <th style="padding: 10px; text-align: left;">Telefono</th>
-                                    <th style="padding: 10px; text-align: center;">Puntos</th>
+                                    <th style="padding: 10px; text-align: left;">Usuario</th>
                                     <th style="padding: 10px; text-align: left;">Fecha de Registro</th>
                                 </tr>
                             </thead>
@@ -653,6 +651,10 @@
                 <button onclick="mostrarBusquedaUsuarios()"
                     style="flex: 1; padding: 12px; background: #4299e1; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
                     <i class="fas fa-search"></i> Buscar Usuario
+                </button>
+                <button onclick="mostrarOpcionesEditarUsuario()"
+                    style="flex: 1; padding: 12px; background: #ed8936; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                    <i class="fas fa-edit"></i> Editar Usuario
                 </button>
                 <button onclick="mostrarEliminarUsuario()"
                     style="flex: 1; padding: 12px; background: #f56565; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
@@ -792,6 +794,74 @@
                 <input type="text" id="regUsername" placeholder="Usuario" required>
                 <input type="password" id="regPassword" placeholder="Contrasena" required>
                 <button type="submit">Registrar Empleado</button>
+            </form>
+        </div>
+    </div>
+    <div id="modalOpcionesEditarUsuario" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <span class="close" onclick="cerrarModalOpcionesEditarUsuario()">&times;</span>
+            <h2><i class="fas fa-edit"></i> Seleccionar Tipo de Usuario a Editar</h2>
+            <div style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
+                <button onclick="solicitarIdYPasswordEditar('empleado')"
+                    style="padding: 15px; background: #667eea; color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 1.1em;">
+                    <i class="fas fa-user-tie"></i> Empleado
+                </button>
+                <button onclick="solicitarIdYPasswordEditar('cliente')"
+                    style="padding: 15px; background: #48bb78; color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 1.1em;">
+                    <i class="fas fa-user"></i> Cliente
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalSolicitarIdEditar" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <span class="close" onclick="cerrarModalSolicitarIdEditar()">&times;</span>
+            <h2><i class="fas fa-key"></i> Verificacion para Editar</h2>
+            <div style="margin-top: 20px;">
+                <input type="text" id="idUsuarioEditar" placeholder="ID del usuario a editar"
+                    style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 15px;">
+                <input type="password" id="passwordAdminEditar" placeholder="Contrasena de administrador"
+                    style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 15px;">
+                <button onclick="verificarPasswordAdminEditar()"
+                    style="width: 100%; padding: 12px; background: #4299e1; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                    <i class="fas fa-arrow-right"></i> Verificar
+                </button>
+                <div id="editarUsuarioError" style="color: #e53e3e; margin-top: 10px; text-align: center;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalEditarEmpleado" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="cerrarModalEditarEmpleado()">&times;</span>
+            <h2><i class="fas fa-user-tie"></i> Editar Empleado</h2>
+            <form id="formEditarEmpleado">
+                <input type="hidden" id="editEmpleadoId">
+                <input type="text" id="editEmpleadoNombre" placeholder="Nombre" required>
+                <input type="text" id="editEmpleadoApellido" placeholder="Apellido" required>
+                <input type="text" id="editEmpleadoUsername" placeholder="Usuario" required>
+                <input type="password" id="editEmpleadoPassword"
+                    placeholder="Nueva contrasena (dejar vacio para no cambiar)">
+                <button type="submit">Guardar Cambios</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="modalEditarCliente" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="cerrarModalEditarCliente()">&times;</span>
+            <h2><i class="fas fa-user"></i> Editar Cliente</h2>
+            <form id="formEditarCliente">
+                <input type="hidden" id="editClienteId">
+                <input type="text" id="editClienteNombre" placeholder="Nombre" required>
+                <input type="text" id="editClienteApellido" placeholder="Apellido" required>
+                <input type="tel" id="editClienteTelefono" placeholder="Telefono" required>
+                <input type="text" id="editClienteEmail" placeholder="Email">
+                <input type="password" id="editClientePassword"
+                    placeholder="Nueva contrasena (dejar vacio para no cambiar)">
+                <input type="number" id="editClientePuntos" placeholder="Puntos" min="0">
+                <button type="submit">Guardar Cambios</button>
             </form>
         </div>
     </div>

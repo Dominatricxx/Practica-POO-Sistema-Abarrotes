@@ -274,12 +274,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!event.target.closest('[id^="btnDominio"]') && !event.target.closest('[id^="dropdownDominio"]')) {
             document.querySelectorAll('[id^="dropdownDominio"]').forEach(d => d.style.display = 'none');
         }
-        if (!event.target.closest('#btnFiltroBD') && !event.target.closest('#dropdownFiltroBD')) {
-            var dropdownFiltro = document.getElementById('dropdownFiltroBD');
-            if (dropdownFiltro) {
-                dropdownFiltro.style.display = 'none';
-            }
-        }
     });
 
     const loginClienteEmailInput = document.getElementById('loginClienteEmail');

@@ -1851,6 +1851,59 @@ function cerrarModalBaseDatosUsuarios() {
     document.getElementById('modalBaseDatosUsuarios').style.display = 'none';
 }
 
+async function mostrarBaseDatosVentas() {
+    document.getElementById('modalBaseDatosVentas').style.display = 'block';
+    await cargarTicketsVentas();
+}
+
+function cerrarModalBaseDatosVentas() {
+    document.getElementById('modalBaseDatosVentas').style.display = 'none';
+}
+
+async function cargarTicketsVentas() {
+    try {
+        const response = await fetch('/api/ventas/tickets');
+        const data = await response.json();
+
+        const contenido = document.getElementById('contenidoTickets');
+
+        if (!data.tickets || data.tickets.length === 0) {
+            contenido.innerHTML = '<p style="text-align: center; padding: 40px; color: #999;">No hay tickets de ventas registrados</p>';
+            return;
+        }
+
+        let html = '';
+        data.tickets.forEach((ticket, index) => {
+            html += `
+                <div style="margin-bottom: 20px; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden;">
+                    <div style="background: #4299e1; color: white; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center;">
+                        <span><i class="fas fa-receipt"></i> ${ticket.nombre}</span>
+                        <button onclick="imprimirTicketIndividual('ticket_${index}')" 
+                            style="background: white; color: #4299e1; border: none; padding: 5px 12px; border-radius: 5px; cursor: pointer; font-weight: bold;">
+                            <i class="fas fa-print"></i> Imprimir
+                        </button>
+                    </div>
+                    <pre id="ticket_${index}" style="background: #f8f9fa; padding: 15px; margin: 0; font-family: monospace; font-size: 0.85em; white-space: pre-wrap; max-height: 300px; overflow-y: auto;">${escapeHtml(ticket.contenido)}</pre>
+                </div>
+            `;
+        });
+
+        contenido.innerHTML = html;
+    } catch (error) {
+        console.error('Error cargando tickets:', error);
+        document.getElementById('contenidoTickets').innerHTML = '<p style="text-align: center; color: #e53e3e;">Error al cargar los tickets</p>';
+    }
+}
+
+function imprimirTicketIndividual(ticketId) {
+    const ticketContent = document.getElementById(ticketId).textContent;
+    const ventana = window.open('', '_blank');
+    ventana.document.write('<pre style="font-family: monospace; font-size: 12px;">' + ticketContent + '</pre>');
+    ventana.document.close();
+    ventana.print();
+    ventana.close();
+}
+
 async function cargarEmpleadosBD() {
     try {
         const response = await fetch('/api/empleados/listar');
@@ -3312,6 +3365,9 @@ window.onclick = function (event) {
             }
             if (modal.id === 'modalEditarCliente') {
                 document.getElementById('modalEditarCliente').style.display = 'none';
+            }
+            if (modal.id === 'modalBaseDatosVentas') {
+                document.getElementById('modalBaseDatosVentas').style.display = 'none';
             }
         }
     });

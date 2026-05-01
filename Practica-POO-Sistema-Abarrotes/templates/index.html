@@ -340,8 +340,12 @@
 
             <div id="reporteContenidoEmpleado" class="reportes-scroll">
             </div>
+            <button onclick="mostrarBaseDatosVentas()"
+                style="width: 100%; margin-top: 20px; padding: 14px; background: #4299e1; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1.1em; font-weight: bold; transition: background 0.3s ease;">
+                <i class="fas fa-receipt"></i> Ver Base de Datos de Ventas
+            </button>
             <button onclick="mostrarBaseDatosUsuarios()"
-                style="width: 100%; margin-top: 20px; padding: 14px; background: #48bb78; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1.1em; font-weight: bold; transition: background 0.3s ease;">
+                style="width: 100%; margin-top: 10px; padding: 14px; background: #48bb78; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1.1em; font-weight: bold; transition: background 0.3s ease;">
                 <i class="fas fa-database"></i> Ver Base de Datos de Usuarios
             </button>
         </div>
@@ -937,6 +941,20 @@
                 <input type="number" id="editClientePuntos" placeholder="Puntos" min="0">
                 <button type="submit">Guardar Cambios</button>
             </form>
+        </div>
+    </div>
+
+    <div id="modalBaseDatosVentas" class="modal">
+        <div class="modal-content"
+            style="max-width: 950px; width: 95%; max-height: 85vh; margin: 3% auto; display: flex; flex-direction: column;">
+            <span class="close" onclick="cerrarModalBaseDatosVentas()">&times;</span>
+            <h2 style="margin-bottom: 20px; flex-shrink: 0;"><i class="fas fa-receipt"></i> Base de Datos de Ventas -
+                Tickets</h2>
+            <div id="contenidoTickets" style="overflow-y: auto; flex: 1; padding-right: 10px;">
+                <p style="text-align: center; color: #999;">Cargando tickets...</p>
+            </div>
+            <button onclick="cerrarModalBaseDatosVentas()" class="btn-cerrar"
+                style="margin-top: 15px; width: 100%; flex-shrink: 0;">Cerrar</button>
         </div>
     </div>
 

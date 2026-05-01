@@ -618,12 +618,19 @@ class VentasController:
                 self.venta_actual['cliente'] = cliente.to_dict()
                 self.db.guardar_cliente(cliente)
         
+        venta_id = None
         try:
-            self.db.guardar_venta(self.venta_actual, self.venta_actual['carrito'], puntos_ganados)
+            venta_id = self.db.guardar_venta(self.venta_actual, self.venta_actual['carrito'], puntos_ganados)
         except Exception as e:
             return {'error': f'Error al guardar en base de datos: {str(e)}'}
         
         ticket = self._generar_ticket(puntos_ganados)
+        
+        try:
+            self._guardar_ticket_archivo(ticket, self.venta_actual['folio'], venta_id)
+        except Exception as e:
+            print(f"Error al guardar ticket en archivo: {e}")
+        
         self.ventas_realizadas.append(self.venta_actual)
         self.venta_actual = None
         
@@ -632,6 +639,33 @@ class VentasController:
             'venta': self.ventas_realizadas[-1],
             'puntos_ganados': puntos_ganados
         }
+
+    def _guardar_ticket_archivo(self, ticket, folio, venta_id):
+        tickets_dir = os.path.join(BASE_DIR, "tickets")
+        if not os.path.exists(tickets_dir):
+            os.makedirs(tickets_dir)
+        
+        fecha_actual = datetime.now().strftime("%Y%m%d_%H%M%S")
+        venta_id_str = str(venta_id) if venta_id is not None else "0"
+        nombre_archivo = f"ticket_{folio}_{fecha_actual}_{venta_id_str}.txt"
+        ruta_completa = os.path.join(tickets_dir, nombre_archivo)
+        
+        with open(ruta_completa, 'w', encoding='utf-8') as f:
+            f.write(ticket)
+        
+        print(f"Ticket guardado en: {ruta_completa}")
+
+    def _guardar_ticket_archivo(self, ticket, folio, venta_id):
+        tickets_dir = os.path.join(BASE_DIR, "tickets")
+        if not os.path.exists(tickets_dir):
+            os.makedirs(tickets_dir)
+        
+        fecha_actual = datetime.now().strftime("%Y%m%d_%H%M%S")
+        nombre_archivo = f"ticket_{folio}_{fecha_actual}_{venta_id}.txt"
+        ruta_completa = os.path.join(tickets_dir, nombre_archivo)
+        
+        with open(ruta_completa, 'w', encoding='utf-8') as f:
+            f.write(ticket)
 
     def _generar_ticket(self, puntos_ganados=0):
         ticket_lines = []
@@ -1445,6 +1479,27 @@ async def editar_cliente(cliente_id: str, request: Request):
         ctrl_ventas.clientes[telefono] = cliente_obj
     
     return {"success": True, "message": "Cliente actualizado exitosamente"}
+
+@app.get("/api/ventas/tickets")
+async def obtener_tickets():
+    tickets_dir = os.path.join(BASE_DIR, "tickets")
+    if not os.path.exists(tickets_dir):
+        return {"tickets": []}
+    
+    archivos = []
+    for archivo in os.listdir(tickets_dir):
+        if archivo.endswith('.txt'):
+            ruta_completa = os.path.join(tickets_dir, archivo)
+            with open(ruta_completa, 'r', encoding='utf-8') as f:
+                contenido = f.read()
+            archivos.append({
+                "nombre": archivo,
+                "contenido": contenido
+            })
+    
+    archivos.sort(key=lambda x: x['nombre'], reverse=True)
+    
+    return {"tickets": archivos}
 
 if __name__ == "__main__":
     import uvicorn

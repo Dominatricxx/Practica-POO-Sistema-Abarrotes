@@ -1108,71 +1108,90 @@ async def reporte_ventas_detalle(periodo: str = "todas"):
     cursor = conn.cursor()
     
     cursor.execute('''
-        SELECT v.id, v.folio, v.fecha, v.total, v.descuento, v.puntos_ganados,
-               c.nombre as cliente_nombre
-        FROM ventas v
-        LEFT JOIN clientes c ON v.telefono_cliente = c.telefono
-        WHERE v.fecha >= ?
-        ORDER BY v.fecha DESC
+        SELECT id, folio, fecha, total, descuento, puntos_ganados,
+               telefono_cliente, subtotal, impuestos
+        FROM ventas
+        WHERE fecha >= ?
+        ORDER BY fecha DESC
+        LIMIT 50
     ''', (fecha_inicio,))
-    ventas = cursor.fetchall()
+    ventas_rows = cursor.fetchall()
+    
+    ventas = []
+    for v in ventas_rows:
+        cliente_nombre = "Publico General"
+        if v[6]:
+            cursor.execute('SELECT nombre FROM clientes WHERE telefono = ?', (v[6],))
+            cliente_result = cursor.fetchone()
+            if cliente_result:
+                cliente_nombre = cliente_result[0]
+        
+        ventas.append({
+            "id": v[0],
+            "folio": v[1],
+            "fecha": v[2],
+            "total": v[3],
+            "descuento": v[4],
+            "puntos_ganados": v[5],
+            "cliente": cliente_nombre,
+            "subtotal": v[7],
+            "impuestos": v[8]
+        })
+    
+    cursor.execute('''
+        SELECT 
+            COALESCE(SUM(total), 0) as ingresos_totales,
+            COALESCE(SUM(subtotal), 0) as subtotal_total,
+            COALESCE(SUM(descuento), 0) as descuentos_totales,
+            COALESCE(SUM(impuestos), 0) as impuestos_totales,
+            COUNT(*) as cantidad_ventas
+        FROM ventas
+        WHERE fecha >= ?
+    ''', (fecha_inicio,))
+    resumen = cursor.fetchone()
+    
+    cursor.execute('''
+        SELECT COALESCE(SUM(vd.cantidad * p.precioCompra), 0) as costo_total
+        FROM ventas_detalle vd
+        JOIN productos p ON vd.codigoBarra = p.codigoBarra
+        JOIN ventas v ON vd.venta_id = v.id
+        WHERE v.fecha >= ?
+    ''', (fecha_inicio,))
+    costo_result = cursor.fetchone()
     
     cursor.execute('''
         SELECT vd.codigoBarra, p.nombre, SUM(vd.cantidad) as total_vendido,
                SUM(vd.subtotal_detalle) as total_ventas, p.stock as stock_actual,
                SUM(vd.cantidad * p.precioCompra) as costo_total
         FROM ventas_detalle vd
-        JOIN ventas v ON vd.venta_id = v.id
         JOIN productos p ON vd.codigoBarra = p.codigoBarra
-        WHERE v.fecha >= ?
         GROUP BY vd.codigoBarra, p.nombre, p.stock
         ORDER BY total_vendido DESC
-    ''', (fecha_inicio,))
+    ''')
     productos_vendidos = cursor.fetchall()
-    
-    cursor.execute('''
-        SELECT 
-            COALESCE(SUM(vd.subtotal_detalle), 0) as total_ventas,
-            COALESCE(SUM(vd.cantidad * p.precioCompra), 0) as total_costo,
-            COALESCE(SUM(v.total), 0) as total_con_descuento,
-            COALESCE(SUM(v.descuento), 0) as total_descuentos
-        FROM ventas_detalle vd
-        JOIN ventas v ON vd.venta_id = v.id
-        JOIN productos p ON vd.codigoBarra = p.codigoBarra
-        WHERE v.fecha >= ?
-    ''', (fecha_inicio,))
-    ganancias_data = cursor.fetchone()
     
     conn.close()
     
-    total_ventas = ganancias_data[0] if ganancias_data[0] else 0
-    total_costo = ganancias_data[1] if ganancias_data[1] else 0
-    total_con_descuento = ganancias_data[2] if ganancias_data[2] else 0
-    total_descuentos = ganancias_data[3] if ganancias_data[3] else 0
-    ganancia_neta = total_ventas - total_costo
-    ganancia_real = total_con_descuento - total_costo
+    ingresos_totales = resumen[0]
+    subtotal_total = resumen[1]
+    descuentos_totales = resumen[2]
+    impuestos_totales = resumen[3]
+    cantidad_ventas = resumen[4]
+    costo_total = costo_result[0]
+    
+    ganancia_neta = subtotal_total - costo_total
+    ganancia_real = ingresos_totales - costo_total
     
     return {
         "periodo": periodo,
-        "total_ventas_bruto": total_ventas,
-        "total_costo_productos": total_costo,
-        "total_ventas_neto": total_con_descuento,
+        "total_ventas_bruto": subtotal_total,
+        "total_costo_productos": costo_total,
+        "total_ventas_neto": ingresos_totales,
         "ganancia_neta": ganancia_neta,
         "ganancia_real": ganancia_real,
-        "total_descuentos": total_descuentos,
-        "cantidad_ventas": len(ventas),
-        "ventas": [
-            {
-                "id": v[0],
-                "folio": v[1],
-                "fecha": v[2],
-                "total": v[3],
-                "descuento": v[4],
-                "puntos_ganados": v[5],
-                "cliente": v[6] if v[6] else "Público General"
-            }
-            for v in ventas[:50]
-        ],
+        "total_descuentos": descuentos_totales,
+        "cantidad_ventas": cantidad_ventas,
+        "ventas": ventas,
         "productos_vendidos": [
             {
                 "codigoBarra": p[0],

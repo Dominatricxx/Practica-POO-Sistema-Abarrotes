@@ -8,7 +8,67 @@ let intentosFallidosEmpleado = 0;
 let intentosFallidosCliente = 0;
 let tipoUsuarioARegistrar = null;
 
+function validarEmailSinMayusculas(email) {
+    if (!email) return { valido: false, mensaje: 'El correo es requerido' };
+    if (email !== email.toLowerCase()) {
+        return { valido: false, mensaje: 'El correo no puede contener mayusculas' };
+    }
+    if (!email.includes('@')) {
+        return { valido: false, mensaje: 'El correo no tiene un formato valido' };
+    }
+    return { valido: true, mensaje: '' };
+}
+
+function validarSoloLetras(texto, campo) {
+    if (!texto.trim()) return { valido: false, mensaje: 'El ' + campo + ' es requerido' };
+    var regex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$/;
+    if (!regex.test(texto)) {
+        return { valido: false, mensaje: 'El ' + campo + ' solo puede contener letras y espacios' };
+    }
+    return { valido: true, mensaje: '' };
+}
+
+function forzarMinusculasInput(inputId) {
+    var input = document.getElementById(inputId);
+    if (input) {
+        input.addEventListener('input', function () {
+            var cursorPos = this.selectionStart;
+            this.value = this.value.toLowerCase();
+            this.setSelectionRange(cursorPos, cursorPos);
+        });
+    }
+}
+
+function forzarSoloLetrasInput(inputId) {
+    var input = document.getElementById(inputId);
+    if (input) {
+        input.addEventListener('input', function () {
+            var cursorPos = this.selectionStart;
+            this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, '');
+            this.setSelectionRange(cursorPos, cursorPos);
+        });
+    }
+}
+
+function forzarSoloTextoInput(inputId) {
+    var input = document.getElementById(inputId);
+    if (input) {
+        input.addEventListener('input', function () {
+            var cursorPos = this.selectionStart;
+            this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, '');
+            this.setSelectionRange(cursorPos, cursorPos);
+        });
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    forzarMinusculasInput('regClienteEmail');
+    forzarSoloLetrasInput('regClienteNombre');
+    forzarSoloLetrasInput('regClienteApellido');
+    forzarSoloLetrasInput('regNombre');
+    forzarSoloLetrasInput('regApellido');
+    forzarSoloLetrasInput('nombreCliente');
+
     document.getElementById('formProducto').addEventListener('submit', registrarProducto);
     document.getElementById('formCliente').addEventListener('submit', registrarCliente);
     document.getElementById('tipoDescuento').addEventListener('change', toggleCamposDescuento);
@@ -25,6 +85,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const password = document.getElementById('regClientePassword').value;
 
+        var validacionNombre = validarSoloLetras(nombre, 'nombre');
+        if (!validacionNombre.valido) {
+            mostrarNotificacion(validacionNombre.mensaje, 'error');
+            return;
+        }
+        var validacionApellido = validarSoloLetras(apellido, 'apellido');
+        if (!validacionApellido.valido) {
+            mostrarNotificacion(validacionApellido.mensaje, 'error');
+            return;
+        }
+        var validacionEmail = validarEmailSinMayusculas(email);
+        if (!validacionEmail.valido) {
+            mostrarNotificacion(validacionEmail.mensaje, 'error');
+            return;
+        }
         if (!nombre || !apellido || !email || !telefono || !password) {
             mostrarNotificacion('Completa todos los campos', 'error');
             return;
@@ -67,6 +142,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const apellido = formatearNombre(document.getElementById('regApellido').value);
         const username = document.getElementById('regUsername').value;
         const password = document.getElementById('regPassword').value;
+
+        const validacionNombre = validarSoloLetras(nombre, 'nombre');
+        if (!validacionNombre.valido) {
+            mostrarNotificacion(validacionNombre.mensaje, 'error');
+            return;
+        }
+        const validacionApellido = validarSoloLetras(apellido, 'apellido');
+        if (!validacionApellido.valido) {
+            mostrarNotificacion(validacionApellido.mensaje, 'error');
+            return;
+        }
 
         if (!nombre || !apellido || !username || !password) {
             mostrarNotificacion('Completa todos los campos', 'error');
@@ -433,6 +519,11 @@ function verificarLoginCliente() {
     const email = obtenerEmailCompleto('loginClienteEmail', 'btnDominioLogin');
     const password = document.getElementById('loginClientePassword').value;
 
+    var validacionEmail = validarEmailSinMayusculas(email);
+    if (!validacionEmail.valido) {
+        document.getElementById('loginClienteError').innerHTML = validacionEmail.mensaje;
+        return;
+    }
     if (!email || !password) {
         document.getElementById('loginClienteError').innerHTML = 'Por favor ingresa email y contrasena';
         return;
@@ -526,6 +617,8 @@ function mostrarRegistroEmpleado() {
     const modal = document.getElementById('modalRegistroEmpleado');
     modal.style.display = 'block';
     document.getElementById('formRegistroEmpleado').reset();
+    document.getElementById('regNombre').value = '';
+    document.getElementById('regApellido').value = '';
 }
 
 function cerrarModalRegistroEmpleado() {
@@ -1801,6 +1894,11 @@ document.getElementById('formReestablecerCliente').addEventListener('submit', fu
     const adminPassword = document.getElementById('reestablecerAdminPasswordCliente').value;
     const nuevaPassword = document.getElementById('reestablecerNuevaPasswordCliente').value;
 
+    var validacionEmail = validarEmailSinMayusculas(email);
+    if (!validacionEmail.valido) {
+        document.getElementById('reestablecerClienteError').innerHTML = validacionEmail.mensaje;
+        return;
+    }
     if (!email || !telefono || !adminPassword || !nuevaPassword) {
         document.getElementById('reestablecerClienteError').innerHTML = 'Completa todos los campos';
         return;
@@ -2340,6 +2438,16 @@ document.addEventListener('DOMContentLoaded', function () {
             const username = document.getElementById('editEmpleadoUsername').value;
             const password = document.getElementById('editEmpleadoPassword').value;
 
+            var validacionNombre = validarSoloLetras(nombre, 'nombre');
+            if (!validacionNombre.valido) {
+                mostrarNotificacion(validacionNombre.mensaje, 'error');
+                return;
+            }
+            var validacionApellido = validarSoloLetras(apellido, 'apellido');
+            if (!validacionApellido.valido) {
+                mostrarNotificacion(validacionApellido.mensaje, 'error');
+                return;
+            }
             if (!nombre || !apellido || !username) {
                 mostrarNotificacion('Completa todos los campos requeridos', 'error');
                 return;
@@ -2393,6 +2501,16 @@ document.addEventListener('DOMContentLoaded', function () {
             const password = document.getElementById('editClientePassword').value;
             const puntos = parseInt(document.getElementById('editClientePuntos').value) || 0;
 
+            var validacionNombre = validarSoloLetras(nombre, 'nombre');
+            if (!validacionNombre.valido) {
+                mostrarNotificacion(validacionNombre.mensaje, 'error');
+                return;
+            }
+            var validacionApellido = validarSoloLetras(apellido, 'apellido');
+            if (!validacionApellido.valido) {
+                mostrarNotificacion(validacionApellido.mensaje, 'error');
+                return;
+            }
             if (!nombre || !apellido || !telefono) {
                 mostrarNotificacion('Completa todos los campos requeridos', 'error');
                 return;

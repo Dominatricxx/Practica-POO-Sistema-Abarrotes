@@ -1879,22 +1879,24 @@ async function cargarTicketsVentas() {
             return;
         }
 
-        let html = '';
+        let html = '<div style="display: flex; flex-wrap: wrap; gap: 15px; justify-content: flex-start; align-items: flex-start;">';
+
         data.tickets.forEach((ticket, index) => {
             html += `
-                <div style="margin-bottom: 20px; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden;">
-                    <div style="background: #4299e1; color: white; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center;">
-                        <span><i class="fas fa-receipt"></i> ${ticket.nombre}</span>
+                <div style="background: white; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden; display: inline-block; width: auto; min-width: 250px; max-width: 380px;">
+                    <div style="background: #4299e1; color: white; padding: 6px 10px; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.75em;"><i class="fas fa-receipt"></i> ${ticket.nombre.replace('ticket_', '').replace('.txt', '')}</span>
                         <button onclick="imprimirTicketIndividual('ticket_${index}')" 
-                            style="background: white; color: #4299e1; border: none; padding: 5px 12px; border-radius: 5px; cursor: pointer; font-weight: bold;">
-                            <i class="fas fa-print"></i> Imprimir
+                            style="background: white; color: #4299e1; border: none; padding: 2px 8px; border-radius: 3px; cursor: pointer; font-weight: bold; font-size: 0.7em;">
+                            <i class="fas fa-print"></i>
                         </button>
                     </div>
-                    <pre id="ticket_${index}" style="background: #f8f9fa; padding: 20px; margin: 0; font-family: 'Courier New', monospace; font-size: 0.85em; white-space: pre; overflow-x: auto; overflow-y: auto; max-height: 300px; line-height: 1.4; display: inline-block; min-width: auto; width: auto;">${escapeHtml(ticket.contenido)}</pre>
+                    <pre id="ticket_${index}" style="background: #f8f9fa; padding: 8px 10px; margin: 0; font-family: 'Courier New', monospace; font-size: 0.6em; white-space: pre; overflow-x: auto; overflow-y: auto; max-height: 250px; line-height: 1.2; display: inline-block; width: auto;">${escapeHtml(ticket.contenido)}</pre>
                 </div>
             `;
         });
 
+        html += '</div>';
         contenido.innerHTML = html;
     } catch (error) {
         console.error('Error cargando tickets:', error);

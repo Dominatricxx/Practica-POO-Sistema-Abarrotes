@@ -1,0 +1,32 @@
+================================================
+     ABARROTES DON PEPE
+================================================
+Folio: F-101
+Fecha: 2026-04-30 23:22
+Cliente: Dominic
+------------------------------------------------
+Cloro                x1.0  $  25.00
+Jabon Liquido        x1.0  $  25.00
+Trapeador            x1.0  $  25.00
+Coca Cola            x1.0  $  25.00
+Jugo de Naranja      x1.0  $  25.00
+Agua Mineral         x1.0  $  25.00
+Leche Entera         x1.0  $  25.00
+Yogurt Fresa         x1.0  $  25.00
+Queso Oaxaca         x1.0  $  25.00
+Pechuga de Pollo     x1.0  $  25.00
+Carne Molida         x1.0  $  25.00
+Chuleta de Cerdo     x1.0  $  25.00
+Tomate               x1.0  $  25.00
+Cebolla              x1.0  $  25.00
+Papa                 x1.0  $  25.00
+------------------------------------------------
+Subtotal: $  375.00
+Impuestos: $   60.00
+Descuento: -$    0.00
+================================================
+TOTAL A PAGAR: $  435.00
+------------------------------------------------
+PUNTOS GANADOS: 43
+TOTAL PUNTOS: 435
+================================================

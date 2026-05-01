@@ -252,6 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     headers: { 'Content-Type': 'application/json' }
                 }).catch(function () { });
             }
+            ocultarTodosModalesAdmin();
             rolActual = null;
             document.getElementById('contenidoPrincipal').style.display = 'none';
             document.getElementById('menuInicial').style.display = 'flex';
@@ -297,10 +298,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+function ocultarTodosModalesAdmin() {
+    var modalesAdmin = [
+        'modalBaseDatosUsuarios',
+        'modalOpcionesAgregarUsuario',
+        'modalOpcionesEditarUsuario',
+        'modalPasswordAdminRegistro',
+        'modalSolicitarIdEditar',
+        'modalBusquedaUsuarios',
+        'modalEliminarUsuario',
+        'modalEditarEmpleado',
+        'modalEditarCliente',
+        'modalRegistroCliente',
+        'modalRegistroEmpleado',
+        'modalReestablecerEmpleado',
+        'modalReestablecerCliente'
+    ];
+    modalesAdmin.forEach(function (id) {
+        var modal = document.getElementById(id);
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    });
+}
+
 function seleccionarRol(rol) {
     rolActual = rol;
     document.getElementById('menuInicial').style.display = 'none';
     document.getElementById('contenidoPrincipal').style.display = 'block';
+
+    ocultarTodosModalesAdmin();
 
     if (rol === 'empleado') {
         document.getElementById('rolActual').style.display = 'block';
@@ -551,8 +578,10 @@ function cerrarSesion() {
         return;
     }
 
+    ocultarTodosModalesAdmin();
     document.getElementById('modalConfirmarCerrarSesion').style.display = 'block';
 }
+
 async function cargarProductos() {
     try {
         const response = await fetch('/api/productos');

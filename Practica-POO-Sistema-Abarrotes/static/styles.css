@@ -482,9 +482,12 @@ header {
 }
 
 .ticket-modal {
-    max-width: 600px;
+    max-width: 500px;
+    width: auto;
     margin: 0 auto;
     position: relative;
+    display: block;
+    text-align: center;
 }
 
 .close {
@@ -540,11 +543,18 @@ header {
     background: #f8f9fa;
     padding: 20px;
     border-radius: 10px;
-    font-family: monospace;
-    font-size: 0.9em;
-    white-space: pre-wrap;
-    margin: 20px 0;
-    overflow-y: visible;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85em;
+    white-space: pre;
+    margin: 20px auto;
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 70vh;
+    display: inline-block;
+    min-width: auto;
+    width: auto;
+    line-height: 1.4;
+    text-align: left;
 }
 
 .btn-cerrar,
@@ -1142,6 +1152,31 @@ header {
     position: sticky;
     top: 0;
     z-index: 10;
+}
+
+.ticket-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.ticket-content::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.ticket-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.ticket-content::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.ticket-content::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
 }
 
 @media (max-width: 1024px) {

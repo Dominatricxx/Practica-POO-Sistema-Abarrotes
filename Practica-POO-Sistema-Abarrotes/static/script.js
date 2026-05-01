@@ -1539,21 +1539,26 @@ function mostrarTicket(ticket) {
     ticketContent.textContent = ticket;
     modal.style.display = 'block';
 
-    setTimeout(() => {
-        const imprimirBtn = document.createElement('button');
-        imprimirBtn.innerHTML = '<i class="fas fa-print"></i> Imprimir Ticket';
-        imprimirBtn.className = 'btn-print';
-        imprimirBtn.onclick = () => {
-            const ventana = window.open('', '_blank');
-            ventana.document.write('<pre>' + ticket + '</pre>');
-            ventana.print();
-            ventana.close();
-        };
-        const modalContent = modal.querySelector('.modal-content');
-        if (!modalContent.querySelector('.btn-print')) {
-            modalContent.appendChild(imprimirBtn);
-        }
-    }, 100);
+    const existingBtn = modal.querySelector('.btn-print');
+    if (existingBtn) {
+        existingBtn.remove();
+    }
+
+    const imprimirBtn = document.createElement('button');
+    imprimirBtn.innerHTML = '<i class="fas fa-print"></i> Imprimir Ticket';
+    imprimirBtn.className = 'btn-print';
+    imprimirBtn.onclick = () => {
+        const ventana = window.open('', '_blank');
+        ventana.document.write('<pre style="font-family: \'Courier New\', monospace; font-size: 12px; line-height: 1.4;">' + ticket + '</pre>');
+        ventana.document.close();
+        ventana.print();
+        ventana.close();
+    };
+
+    const modalContent = modal.querySelector('.modal-content');
+    if (modalContent) {
+        modalContent.appendChild(imprimirBtn);
+    }
 }
 
 function mostrarModalProducto() {
@@ -1591,6 +1596,8 @@ function cerrarModalTicket() {
     modal.style.display = 'none';
     const printBtn = modal.querySelector('.btn-print');
     if (printBtn) printBtn.remove();
+    const ticketContent = document.getElementById('ticketContent');
+    if (ticketContent) ticketContent.textContent = '';
 }
 
 function cerrarModalAdvertenciaVenta() {
@@ -1883,7 +1890,7 @@ async function cargarTicketsVentas() {
                             <i class="fas fa-print"></i> Imprimir
                         </button>
                     </div>
-                    <pre id="ticket_${index}" style="background: #f8f9fa; padding: 15px; margin: 0; font-family: monospace; font-size: 0.85em; white-space: pre-wrap; max-height: 300px; overflow-y: auto;">${escapeHtml(ticket.contenido)}</pre>
+                    <pre id="ticket_${index}" style="background: #f8f9fa; padding: 20px; margin: 0; font-family: 'Courier New', monospace; font-size: 0.85em; white-space: pre; overflow-x: auto; overflow-y: auto; max-height: 300px; line-height: 1.4; display: inline-block; min-width: auto; width: auto;">${escapeHtml(ticket.contenido)}</pre>
                 </div>
             `;
         });

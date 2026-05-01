@@ -668,37 +668,39 @@ class VentasController:
             f.write(ticket)
 
     def _generar_ticket(self, puntos_ganados=0):
+        ancho = 42
         ticket_lines = []
-        ticket_lines.append("=" * 48)
+        ticket_lines.append("=" * ancho)
         ticket_lines.append("     ABARROTES DON PEPE")
-        ticket_lines.append("=" * 48)
+        ticket_lines.append("=" * ancho)
         ticket_lines.append(f"Folio: {self.venta_actual['folio']}")
         ticket_lines.append(f"Fecha: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
         
         if self.venta_actual['cliente']:
-            ticket_lines.append(f"Cliente: {self.venta_actual['cliente']['nombre']}")
+            nombre_cliente = self.venta_actual['cliente']['nombre'][:20]
+            ticket_lines.append(f"Cliente: {nombre_cliente}")
         
-        ticket_lines.append("-" * 48)
+        ticket_lines.append("-" * ancho)
         
         for d in self.venta_actual['carrito']:
-            nombre = d['producto']['nombre'][:20]
+            nombre = d['producto']['nombre'][:18]
             cantidad = d['cantidad']
             subtotal = d['subtotal_detalle']
-            ticket_lines.append(f"{nombre:<20} x{cantidad:>3}  ${subtotal:>7.2f}")
+            ticket_lines.append(f"{nombre:<18} x{cantidad:>4}  ${subtotal:>7.2f}")
         
-        ticket_lines.append("-" * 48)
-        ticket_lines.append(f"Subtotal: ${self.venta_actual['subtotal']:>8.2f}")
+        ticket_lines.append("-" * ancho)
+        ticket_lines.append(f"Subtotal:  ${self.venta_actual['subtotal']:>8.2f}")
         ticket_lines.append(f"Impuestos: ${self.venta_actual['impuestos']:>8.2f}")
         ticket_lines.append(f"Descuento: -${self.venta_actual['descuento']:>8.2f}")
-        ticket_lines.append("=" * 48)
+        ticket_lines.append("=" * ancho)
         ticket_lines.append(f"TOTAL A PAGAR: ${self.venta_actual['total']:>8.2f}")
         
         if puntos_ganados > 0:
-            ticket_lines.append("-" * 48)
+            ticket_lines.append("-" * ancho)
             ticket_lines.append(f"PUNTOS GANADOS: {puntos_ganados}")
             ticket_lines.append(f"TOTAL PUNTOS: {self.venta_actual['cliente']['puntos']}")
         
-        ticket_lines.append("=" * 48)
+        ticket_lines.append("=" * ancho)
         
         return "\n".join(ticket_lines)
 

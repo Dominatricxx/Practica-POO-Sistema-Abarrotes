@@ -436,10 +436,12 @@
     <div id="modalTicket" class="modal"
         style="overflow-y: auto; display: flex; align-items: flex-start; justify-content: center; padding: 40px 0;">
         <div class="modal-content ticket-modal"
-            style="position: relative; margin: 0 auto; width: 90%; max-width: 600px; display: block; transform: none; top: auto; left: auto;">
+            style="position: relative; margin: 0 auto; width: auto; max-width: 500px; display: block; transform: none; top: auto; left: auto; text-align: center;">
             <span class="close" onclick="cerrarModalTicket()">&times;</span>
-            <h2><i class="fas fa-receipt"></i> Ticket de Venta</h2>
-            <pre id="ticketContent" class="ticket-content"></pre>
+            <h2 style="margin-bottom: 15px;"><i class="fas fa-receipt"></i> Ticket de Venta</h2>
+            <div class="ticket-wrapper">
+                <pre id="ticketContent" class="ticket-content"></pre>
+            </div>
             <button onclick="cerrarModalTicket()" class="btn-cerrar">Cerrar</button>
         </div>
     </div>

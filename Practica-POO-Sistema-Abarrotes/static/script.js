@@ -223,8 +223,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('categoriaDescuento').value = '';
                     toggleCamposDescuento();
                     await cargarProductos();
+                    await cargarClientes();
+                    actualizarPuntosCliente();
                     await nuevaVenta();
-                    mostrarNotificacion('Carrito vaciado y stock restaurado', 'success');
+
+                    if (result.puntos_devueltos && result.puntos_devueltos > 0) {
+                        mostrarNotificacion('Carrito vaciado, stock restaurado y ' + result.puntos_devueltos + ' puntos devueltos', 'success');
+                    } else {
+                        mostrarNotificacion('Carrito vaciado y stock restaurado', 'success');
+                    }
                 } else {
                     mostrarNotificacion('Error al vaciar el carrito', 'error');
                 }
@@ -3155,7 +3162,7 @@ async function cargarReporteEmpleado(periodo) {
             </div>
             
             <h3 style="margin-bottom: 15px; color: #333;"><i class="fas fa-boxes"></i> Productos Vendidos (${periodoTexto})</h3>
-            <div style="overflow-x: auto;">
+            <div class="tabla-contenedor-scroll" style="max-height: 350px;">
                 <table class="tabla-reporte">
                     <thead>
                         <tr>
@@ -3173,7 +3180,8 @@ async function cargarReporteEmpleado(periodo) {
         if (data.productos_vendidos.length === 0) {
             html += `<tr><td colspan="6" style="text-align: center; padding: 30px;">No hay productos vendidos en este período</td></tr>`;
         } else {
-            data.productos_vendidos.forEach((p, index) => {
+            const productosMostrar = data.productos_vendidos.slice(0, 50);
+            productosMostrar.forEach((p, index) => {
                 html += `
                     <tr style="background: ${index % 2 === 0 ? '#f8f9fa' : 'white'};">
                         <td style="padding: 12px;">${escapeHtml(p.nombre)}</td>
@@ -3185,6 +3193,9 @@ async function cargarReporteEmpleado(periodo) {
                     </tr>
                 `;
             });
+            if (data.productos_vendidos.length > 50) {
+                html += `<tr><td colspan="6" style="text-align: center; padding: 10px; color: #666; font-style: italic;">Mostrando 50 de ${data.productos_vendidos.length} productos</td></tr>`;
+            }
         }
 
         html += `
@@ -3193,7 +3204,7 @@ async function cargarReporteEmpleado(periodo) {
             </div>
             
             <h3 style="margin-bottom: 15px; color: #333;"><i class="fas fa-receipt"></i> Últimas Ventas</h3>
-            <div style="overflow-x: auto;">
+            <div class="tabla-contenedor-scroll" style="max-height: 350px;">
                 <table class="tabla-reporte">
                     <thead>
                         <tr style="background: #764ba2;">
@@ -3210,7 +3221,8 @@ async function cargarReporteEmpleado(periodo) {
         if (data.ventas.length === 0) {
             html += `<tr><td colspan="5" style="text-align: center; padding: 30px;">No hay ventas en este período</td></tr>`;
         } else {
-            data.ventas.forEach((v, index) => {
+            const ventasMostrar = data.ventas.slice(0, 50);
+            ventasMostrar.forEach((v, index) => {
                 html += `
                     <tr style="background: ${index % 2 === 0 ? '#f8f9fa' : 'white'};">
                         <td style="padding: 12px;">${v.folio}</td>
@@ -3221,6 +3233,9 @@ async function cargarReporteEmpleado(periodo) {
                     </tr>
                 `;
             });
+            if (data.ventas.length > 50) {
+                html += `<tr><td colspan="5" style="text-align: center; padding: 10px; color: #666; font-style: italic;">Mostrando 50 de ${data.ventas.length} ventas</td></tr>`;
+            }
         }
 
         html += `

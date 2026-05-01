@@ -909,6 +909,7 @@ async def aplicar_descuento_puntos(request: Request):
         if ctrl_ventas.venta_actual:
             ctrl_ventas.venta_actual['descuento'] = ctrl_ventas.venta_actual.get('descuento', 0) + monto_descuento
             ctrl_ventas.venta_actual['total'] = ctrl_ventas.venta_actual['subtotal'] + ctrl_ventas.venta_actual['impuestos'] - ctrl_ventas.venta_actual['descuento']
+            ctrl_ventas.venta_actual['puntos_usados'] = ctrl_ventas.venta_actual.get('puntos_usados', 0) + puntos_usados
         
         return {
             "success": True,
@@ -922,22 +923,54 @@ async def aplicar_descuento_puntos(request: Request):
 
 @app.post("/api/ventas/cancelar")
 async def cancelar_venta():
-    if ctrl_ventas.venta_actual and ctrl_ventas.venta_actual.get('carrito'):
-        for item in ctrl_ventas.venta_actual['carrito']:
-            producto = inventario.buscar(item['producto']['codigoBarra'])
-            if producto:
-                cantidad = item['cantidad']
-                producto._Producto__stock = producto._Producto__stock + cantidad
-                db_conn = sqlite3.connect(inventario.db.db_name)
-                db_cursor = db_conn.cursor()
-                db_cursor.execute(
-                    'UPDATE productos SET stock = ? WHERE codigoBarra = ?',
-                    (producto._Producto__stock, producto.codigoBarra)
-                )
-                db_conn.commit()
-                db_conn.close()
+    puntos_a_devolver = 0
+    telefono_cliente = None
+    
+    if ctrl_ventas.venta_actual:
+        if ctrl_ventas.venta_actual.get('cliente'):
+            telefono_cliente = ctrl_ventas.venta_actual['cliente'].get('telefono')
+        
+        if ctrl_ventas.venta_actual.get('carrito'):
+            for item in ctrl_ventas.venta_actual['carrito']:
+                producto = inventario.buscar(item['producto']['codigoBarra'])
+                if producto:
+                    cantidad = item['cantidad']
+                    producto._Producto__stock = producto._Producto__stock + cantidad
+                    db_conn = sqlite3.connect(inventario.db.db_name)
+                    db_cursor = db_conn.cursor()
+                    db_cursor.execute(
+                        'UPDATE productos SET stock = ? WHERE codigoBarra = ?',
+                        (producto._Producto__stock, producto.codigoBarra)
+                    )
+                    db_conn.commit()
+                    db_conn.close()
+        
+        descuento_aplicado = ctrl_ventas.venta_actual.get('descuento', 0)
+        
+        if descuento_aplicado > 0 and ctrl_ventas.venta_actual.get('puntos_usados', 0) > 0:
+            puntos_a_devolver = ctrl_ventas.venta_actual.get('puntos_usados', 0)
+            
+            if telefono_cliente and puntos_a_devolver > 0:
+                conn = sqlite3.connect("abarrotes.db")
+                cursor = conn.cursor()
+                cursor.execute('SELECT puntos FROM clientes WHERE telefono = ?', (telefono_cliente,))
+                resultado = cursor.fetchone()
+                if resultado:
+                    puntos_actuales = resultado[0]
+                    nuevos_puntos = puntos_actuales + puntos_a_devolver
+                    cursor.execute('UPDATE clientes SET puntos = ? WHERE telefono = ?', 
+                                 (nuevos_puntos, telefono_cliente))
+                    conn.commit()
+                    
+                    if telefono_cliente in ctrl_ventas.clientes:
+                        ctrl_ventas.clientes[telefono_cliente].puntos = nuevos_puntos
+                conn.close()
+    
     ctrl_ventas.venta_actual = None
-    return {"success": True}
+    return {
+        "success": True,
+        "puntos_devueltos": puntos_a_devolver
+    }
 
 @app.post("/api/ventas/finalizar")
 async def finalizar_venta():

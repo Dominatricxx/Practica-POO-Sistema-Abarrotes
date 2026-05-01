@@ -1126,6 +1126,24 @@ header {
     border-color: #ed8936;
 }
 
+.tabla-contenedor-scroll {
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+
+.tabla-contenedor-scroll table {
+    margin-bottom: 0;
+}
+
+.tabla-contenedor-scroll thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
 @media (max-width: 1024px) {
     .main-content {
         grid-template-columns: 1fr;

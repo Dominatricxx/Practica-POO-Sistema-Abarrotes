@@ -3223,6 +3223,21 @@ async function cargarReporteEmpleado(periodo) {
                 </div>
             </div>
             
+            <div style="margin: 15px 0; display: flex; gap: 10px;">
+                <button onclick="cargarReporteEmpleado('dia')" class="btn-periodo"
+                    style="flex: 1; padding: 12px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                    <i class="fas fa-calendar-day"></i> Hoy
+                </button>
+                <button onclick="cargarReporteEmpleado('semana')" class="btn-periodo"
+                    style="flex: 1; padding: 12px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                    <i class="fas fa-calendar-week"></i> Esta Semana
+                </button>
+                <button onclick="cargarReporteEmpleado('mes')" class="btn-periodo"
+                    style="flex: 1; padding: 12px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer;">
+                    <i class="fas fa-calendar-alt"></i> Este Mes
+                </button>
+            </div>
+            
             <h3 style="margin-bottom: 15px; color: #333;"><i class="fas fa-boxes"></i> Productos Vendidos (${periodoTexto})</h3>
             <div class="tabla-contenedor-scroll" style="max-height: 350px;">
                 <table class="tabla-reporte">

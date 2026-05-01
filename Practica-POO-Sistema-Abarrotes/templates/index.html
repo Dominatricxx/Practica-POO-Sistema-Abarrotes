@@ -323,31 +323,19 @@
                 <h2><i class="fas fa-chart-bar"></i> Gestión de Ventas</h2>
             </div>
 
-            <div style="margin: 20px 0; display: flex; gap: 10px;">
-                <button onclick="cargarReporteEmpleado('dia')" class="btn-periodo"
-                    style="flex: 1; padding: 12px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer;">
-                    <i class="fas fa-calendar-day"></i> Hoy
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <button onclick="mostrarBaseDatosVentas()"
+                    style="flex: 1; padding: 12px; background: #4299e1; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.95em; font-weight: bold; transition: background 0.3s ease;">
+                    <i class="fas fa-receipt"></i> Base de Datos Ventas
                 </button>
-                <button onclick="cargarReporteEmpleado('semana')" class="btn-periodo"
-                    style="flex: 1; padding: 12px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer;">
-                    <i class="fas fa-calendar-week"></i> Esta Semana
-                </button>
-                <button onclick="cargarReporteEmpleado('mes')" class="btn-periodo"
-                    style="flex: 1; padding: 12px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer;">
-                    <i class="fas fa-calendar-alt"></i> Este Mes
+                <button onclick="mostrarBaseDatosUsuarios()"
+                    style="flex: 1; padding: 12px; background: #48bb78; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 0.95em; font-weight: bold; transition: background 0.3s ease;">
+                    <i class="fas fa-database"></i> Base de Datos Usuarios
                 </button>
             </div>
 
             <div id="reporteContenidoEmpleado" class="reportes-scroll">
             </div>
-            <button onclick="mostrarBaseDatosVentas()"
-                style="width: 100%; margin-top: 20px; padding: 14px; background: #4299e1; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1.1em; font-weight: bold; transition: background 0.3s ease;">
-                <i class="fas fa-receipt"></i> Ver Base de Datos de Ventas
-            </button>
-            <button onclick="mostrarBaseDatosUsuarios()"
-                style="width: 100%; margin-top: 10px; padding: 14px; background: #48bb78; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1.1em; font-weight: bold; transition: background 0.3s ease;">
-                <i class="fas fa-database"></i> Ver Base de Datos de Usuarios
-            </button>
         </div>
 
         <div class="panel-inventario-empleado">

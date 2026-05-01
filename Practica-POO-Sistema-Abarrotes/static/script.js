@@ -1789,7 +1789,7 @@ async function eliminarUsuario() {
                 mostrarNotificacion('Empleado eliminado exitosamente', 'success');
                 cerrarModalEliminarUsuario();
                 if (document.getElementById('modalBaseDatosUsuarios').style.display === 'block') {
-                    cargarEmpleadosBD();
+                    await cargarEmpleadosBD();
                 }
             } else {
                 const error = await deleteResponse.json();
@@ -1805,8 +1805,9 @@ async function eliminarUsuario() {
             if (deleteResponse.ok) {
                 mostrarNotificacion('Cliente eliminado exitosamente', 'success');
                 cerrarModalEliminarUsuario();
+                await cargarClientes();
                 if (document.getElementById('modalBaseDatosUsuarios').style.display === 'block') {
-                    cargarClientesBD();
+                    await cargarClientesBD();
                 }
             } else {
                 const error = await deleteResponse.json();

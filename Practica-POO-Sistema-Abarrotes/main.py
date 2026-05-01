@@ -818,16 +818,21 @@ async def eliminar_cliente(cliente_id: str, request: Request):
         conn = sqlite3.connect("abarrotes.db")
         cursor = conn.cursor()
         
-        cursor.execute('SELECT codigo_cliente FROM clientes WHERE codigo_cliente = ?', (cliente_id,))
+        cursor.execute('SELECT codigo_cliente, telefono FROM clientes WHERE codigo_cliente = ?', (cliente_id,))
         cliente = cursor.fetchone()
         
         if not cliente:
             conn.close()
             raise HTTPException(status_code=404, detail="Cliente no encontrado")
         
+        telefono_cliente = cliente[1]
+        
         cursor.execute('DELETE FROM clientes WHERE codigo_cliente = ?', (cliente_id,))
         conn.commit()
         conn.close()
+        
+        if telefono_cliente and telefono_cliente in ctrl_ventas.clientes:
+            del ctrl_ventas.clientes[telefono_cliente]
         
         return {"success": True, "message": "Cliente eliminado exitosamente"}
     except HTTPException:
@@ -1175,6 +1180,8 @@ async def eliminar_empleado(empleado_id: int, request: Request):
         cursor.execute('DELETE FROM empleados WHERE id = ?', (empleado_id,))
         conn.commit()
         conn.close()
+        
+        ctrl_ventas.db = DatabaseManager()
         
         return {"success": True, "message": "Empleado eliminado exitosamente"}
     except HTTPException:

@@ -1354,6 +1354,11 @@ function actualizarCarrito() {
             <div class="item-subtotal">
                 $${item.subtotal_detalle.toFixed(2)}
             </div>
+            <div class="item-acciones">
+${item.cantidad >= 2 ? `<button class="btn-accion btn-restar-item" onclick="restarUnidadCarrito('${escapeHtml(item.producto.codigoBarra)}')" title="Restar unidad"><i class="fas fa-minus"></i></button>` : ''}
+<button class="btn-accion btn-sumar-item" onclick="sumarUnidadCarrito('${escapeHtml(item.producto.codigoBarra)}')" title="Sumar unidad"><i class="fas fa-plus"></i></button>
+<button class="btn-accion btn-eliminar-item" onclick="eliminarDelCarrito('${escapeHtml(item.producto.codigoBarra)}')" title="Eliminar producto"><i class="fas fa-trash-alt"></i></button>
+            </div>
         </div>
     `}).join('');
 
@@ -1365,6 +1370,117 @@ function actualizarCarrito() {
     document.getElementById('impuestos').textContent = `$${ventaActual.impuestos.toFixed(2)}`;
     document.getElementById('descuento').textContent = `-$${(ventaActual.descuento || 0).toFixed(2)}`;
     document.getElementById('total').textContent = `$${ventaActual.total.toFixed(2)}`;
+}
+
+async function eliminarDelCarrito(codigoBarra) {
+    if (!ventaActual || !ventaActual.carrito || ventaActual.carrito.length === 0) {
+        mostrarNotificacion('No hay productos en el carrito', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/ventas/eliminar-item', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ codigoBarra: codigoBarra })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            mostrarNotificacion(errorData.detail || 'Error al eliminar producto', 'error');
+            return;
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+            const ventaResponse = await fetch('/api/ventas/actual');
+            ventaActual = await ventaResponse.json();
+
+            actualizarCarrito();
+            await cargarProductos();
+            mostrarNotificacion('Producto eliminado del carrito', 'success');
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        mostrarNotificacion('Error al eliminar producto', 'error');
+    }
+}
+
+async function sumarUnidadCarrito(codigoBarra) {
+    if (!ventaActual || !ventaActual.carrito || ventaActual.carrito.length === 0) {
+        mostrarNotificacion('No hay productos en el carrito', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/ventas/sumar-unidad', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ codigoBarra: codigoBarra })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            mostrarNotificacion(errorData.detail || 'Error al sumar unidad', 'error');
+            return;
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+            const ventaResponse = await fetch('/api/ventas/actual');
+            ventaActual = await ventaResponse.json();
+
+            actualizarCarrito();
+            await cargarProductos();
+
+            if (result.alertas && result.alertas.length > 0) {
+                result.alertas.forEach(alerta => mostrarNotificacion(alerta, 'warning'));
+            }
+        }
+    } catch (error) {
+        console.error('Error al sumar unidad:', error);
+        mostrarNotificacion('Error al modificar carrito', 'error');
+    }
+}
+
+async function restarUnidadCarrito(codigoBarra) {
+    if (!ventaActual || !ventaActual.carrito || ventaActual.carrito.length === 0) {
+        mostrarNotificacion('No hay productos en el carrito', 'error');
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/ventas/restar-unidad', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ codigoBarra: codigoBarra })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            mostrarNotificacion(errorData.detail || 'Error al restar unidad', 'error');
+            return;
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+            const ventaResponse = await fetch('/api/ventas/actual');
+            ventaActual = await ventaResponse.json();
+
+            actualizarCarrito();
+            await cargarProductos();
+
+            if (result.alerta) {
+                mostrarNotificacion(result.alerta, 'warning');
+            }
+        }
+    } catch (error) {
+        console.error('Error al restar unidad:', error);
+        mostrarNotificacion('Error al modificar carrito', 'error');
+    }
 }
 
 function toggleCamposDescuento() {

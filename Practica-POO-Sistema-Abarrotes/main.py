@@ -935,6 +935,262 @@ async def agregar_item_venta(item: ItemVenta):
         "carrito_actual": resultado["carrito_actual"]
     }
 
+@app.post("/api/ventas/sumar-unidad")
+async def sumar_unidad_carrito(request: Request):
+    try:
+        data = await request.json()
+        codigo_barra = data.get("codigoBarra")
+        
+        if not ctrl_ventas.venta_actual or not ctrl_ventas.venta_actual.get('carrito'):
+            raise HTTPException(status_code=400, detail="No hay una venta activa")
+        
+        for detalle in ctrl_ventas.venta_actual['carrito']:
+            if detalle['producto']['codigoBarra'] == codigo_barra:
+                producto_inventario = inventario.buscar(codigo_barra)
+                
+                if not producto_inventario:
+                    raise HTTPException(status_code=404, detail="Producto no encontrado en inventario")
+                
+                if producto_inventario.stock < 1:
+                    raise HTTPException(status_code=400, detail="Stock insuficiente")
+                
+                try:
+                    alertas = producto_inventario.vender(1)
+                except SinStockException as e:
+                    raise HTTPException(status_code=400, detail=str(e))
+                
+                detalle['cantidad'] += 1
+                detalle['subtotal_detalle'] = detalle['precio_unitario'] * detalle['cantidad']
+                
+                if detalle['producto']['tipo'] == 'ProductoUnitario':
+                    detalle['impuesto_detalle'] = detalle['precio_unitario'] * 0.16 * detalle['cantidad']
+                else:
+                    detalle['impuesto_detalle'] = detalle['precio_unitario'] * 0.08 * detalle['cantidad']
+                
+                ctrl_ventas._recalcular()
+                
+                return {
+                    "success": True,
+                    "message": "Unidad sumada correctamente",
+                    "alertas": alertas
+                }
+        
+        raise HTTPException(status_code=404, detail="Producto no encontrado en el carrito")
+        
+    except HTTPException as http_ex:
+        raise http_ex
+    except Exception as e:
+        print(f"Error al sumar unidad: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+
+@app.post("/api/ventas/restar-unidad")
+async def restar_unidad_carrito(request: Request):
+    try:
+        data = await request.json()
+        codigo_barra = data.get("codigoBarra")
+        
+        if not ctrl_ventas.venta_actual or not ctrl_ventas.venta_actual.get('carrito'):
+            raise HTTPException(status_code=400, detail="No hay una venta activa")
+        
+        for detalle in ctrl_ventas.venta_actual['carrito']:
+            if detalle['producto']['codigoBarra'] == codigo_barra:
+                if detalle['cantidad'] <= 1:
+                    raise HTTPException(status_code=400, detail="La cantidad minima es 1")
+                
+                producto_inventario = inventario.buscar(codigo_barra)
+                if producto_inventario:
+                    producto_inventario._Producto__stock += 1
+                    
+                    conn = sqlite3.connect("abarrotes.db")
+                    cursor = conn.cursor()
+                    cursor.execute(
+                        'UPDATE productos SET stock = ? WHERE codigoBarra = ?',
+                        (producto_inventario._Producto__stock, producto_inventario.codigoBarra)
+                    )
+                    conn.commit()
+                    conn.close()
+                
+                detalle['cantidad'] -= 1
+                detalle['subtotal_detalle'] = detalle['precio_unitario'] * detalle['cantidad']
+                
+                if detalle['producto']['tipo'] == 'ProductoUnitario':
+                    detalle['impuesto_detalle'] = detalle['precio_unitario'] * 0.16 * detalle['cantidad']
+                else:
+                    detalle['impuesto_detalle'] = detalle['precio_unitario'] * 0.08 * detalle['cantidad']
+                
+                ctrl_ventas._recalcular()
+                
+                alerta = None
+                if producto_inventario and producto_inventario.stock < 5:
+                    alerta = f"Advertencia: Stock bajo de {producto_inventario.nombre}"
+                
+                return {
+                    "success": True,
+                    "message": "Unidad restada correctamente",
+                    "alerta": alerta
+                }
+        
+        raise HTTPException(status_code=404, detail="Producto no encontrado en el carrito")
+        
+    except HTTPException as http_ex:
+        raise http_ex
+    except Exception as e:
+        print(f"Error al restar unidad: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+
+@app.post("/api/ventas/eliminar-item")
+async def eliminar_item_venta_endpoint(request: Request):
+    try:
+        data = await request.json()
+        codigo_barra = data.get("codigoBarra")
+        
+        print(f"Intentando eliminar producto: {codigo_barra}")
+        
+        if not ctrl_ventas.venta_actual:
+            raise HTTPException(status_code=400, detail="No hay una venta activa")
+        
+        if not ctrl_ventas.venta_actual.get('carrito'):
+            raise HTTPException(status_code=400, detail="El carrito esta vacio")
+        
+        item_encontrado = None
+        item_index = None
+        
+        for i, detalle in enumerate(ctrl_ventas.venta_actual['carrito']):
+            print(f"Comparando: {detalle['producto']['codigoBarra']} == {codigo_barra}")
+            if detalle['producto']['codigoBarra'] == codigo_barra:
+                item_encontrado = detalle
+                item_index = i
+                break
+        
+        if item_encontrado is None:
+            raise HTTPException(status_code=404, detail="Producto no encontrado en el carrito")
+        
+        producto_inventario = inventario.buscar(codigo_barra)
+        if producto_inventario:
+            cantidad_a_devolver = item_encontrado['cantidad']
+            producto_inventario._Producto__stock += cantidad_a_devolver
+            
+            try:
+                conn = sqlite3.connect("abarrotes.db")
+                cursor = conn.cursor()
+                cursor.execute(
+                    'UPDATE productos SET stock = ? WHERE codigoBarra = ?',
+                    (producto_inventario._Producto__stock, producto_inventario.codigoBarra)
+                )
+                conn.commit()
+                conn.close()
+            except Exception as db_error:
+                print(f"Error al actualizar base de datos: {db_error}")
+        
+        del ctrl_ventas.venta_actual['carrito'][item_index]
+        
+        if not ctrl_ventas.venta_actual['carrito']:
+            ctrl_ventas.venta_actual['subtotal'] = 0.0
+            ctrl_ventas.venta_actual['impuestos'] = 0.0
+            ctrl_ventas.venta_actual['total'] = 0.0
+            ctrl_ventas.venta_actual['descuento'] = 0.0
+        else:
+            ctrl_ventas._recalcular()
+        
+        return {"success": True, "message": "Producto eliminado del carrito"}
+        
+    except HTTPException as http_ex:
+        raise http_ex
+    except Exception as e:
+        print(f"Error completo al eliminar item: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+
+@app.post("/api/ventas/restar-item")
+async def restar_item_carrito(item: ItemVenta):
+    if not ctrl_ventas.venta_actual or not ctrl_ventas.venta_actual.get('carrito'):
+        raise HTTPException(status_code=400, detail="No hay una venta activa")
+    
+    for detalle in ctrl_ventas.venta_actual['carrito']:
+        if detalle['producto']['codigoBarra'] == item.codigoBarra:
+            if detalle['cantidad'] <= 1:
+                raise HTTPException(status_code=400, detail="No se puede restar mas. La cantidad minima es 1")
+            
+            detalle['cantidad'] -= 1
+            detalle['subtotal_detalle'] = detalle['precio_unitario'] * detalle['cantidad']
+            detalle['impuesto_detalle'] = detalle['producto']['precioVenta'] * 0.16  * detalle['cantidad'] if detalle['producto']['tipo'] == 'ProductoUnitario' else detalle['producto']['precioVenta'] * 0.08 * detalle['cantidad']
+            
+            producto_inventario = inventario.buscar(item.codigoBarra)
+            if producto_inventario:
+                producto_inventario._Producto__stock += 1
+                conn = sqlite3.connect(inventario.db.db_name)
+                cursor = conn.cursor()
+                cursor.execute(
+                    'UPDATE productos SET stock = ? WHERE codigoBarra = ?',
+                    (producto_inventario._Producto__stock, producto_inventario.codigoBarra)
+                )
+                conn.commit()
+                conn.close()
+            
+            ctrl_ventas._recalcular()
+            
+            alerta = None
+            if producto_inventario and producto_inventario.stock < 5:
+                alerta = f"Advertencia: '{producto_inventario.nombre}' tiene un stock bajo ({producto_inventario.stock})."
+            
+            return {
+                "success": True,
+                "message": "Unidad restada correctamente",
+                "alerta": alerta
+            }
+    
+    raise HTTPException(status_code=404, detail="Producto no encontrado en el carrito")
+
+@app.post("/api/ventas/sumar-unidad")
+async def sumar_unidad_carrito(request: Request):
+    try:
+        data = await request.json()
+        codigo_barra = data.get("codigoBarra")
+        
+        if not ctrl_ventas.venta_actual or not ctrl_ventas.venta_actual.get('carrito'):
+            raise HTTPException(status_code=400, detail="No hay una venta activa")
+        
+        for detalle in ctrl_ventas.venta_actual['carrito']:
+            if detalle['producto']['codigoBarra'] == codigo_barra:
+                producto_inventario = inventario.buscar(codigo_barra)
+                
+                if not producto_inventario:
+                    raise HTTPException(status_code=404, detail="Producto no encontrado en inventario")
+                
+                if producto_inventario.stock < 1:
+                    raise HTTPException(status_code=400, detail="Stock insuficiente")
+                
+                try:
+                    alertas = producto_inventario.vender(1)
+                except SinStockException as e:
+                    raise HTTPException(status_code=400, detail=str(e))
+                
+                detalle['cantidad'] += 1
+                detalle['subtotal_detalle'] = detalle['precio_unitario'] * detalle['cantidad']
+                
+                if detalle['producto']['tipo'] == 'ProductoUnitario':
+                    detalle['impuesto_detalle'] = detalle['precio_unitario'] * 0.16 * detalle['cantidad']
+                else:
+                    detalle['impuesto_detalle'] = detalle['precio_unitario'] * 0.08 * detalle['cantidad']
+                
+                ctrl_ventas._recalcular()
+                
+                return {
+                    "success": True,
+                    "message": "Unidad sumada correctamente",
+                    "alertas": alertas
+                }
+        
+        raise HTTPException(status_code=404, detail="Producto no encontrado en el carrito")
+        
+    except HTTPException as http_ex:
+        raise http_ex
+    except Exception as e:
+        print(f"Error al sumar unidad: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error interno: {str(e)}")
+
+
 @app.post("/api/ventas/descuento")
 async def aplicar_descuento(descuento: AplicarDescuento):
     resultado = ctrl_ventas.aplicar_descuento(

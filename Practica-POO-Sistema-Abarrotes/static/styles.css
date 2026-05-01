@@ -302,6 +302,62 @@ header {
     color: #667eea;
 }
 
+.item-acciones {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.carrito-item:hover .item-acciones {
+    opacity: 1;
+}
+
+.btn-accion {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    color: white;
+    font-size: 1em;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.3s ease, transform 0.2s ease;
+    padding: 0;
+    line-height: 1;
+}
+
+.btn-accion:hover {
+    transform: scale(1.1);
+}
+
+.btn-eliminar-item {
+    background: #e74c3c;
+}
+
+.btn-eliminar-item:hover {
+    background: #c0392b;
+}
+
+.btn-sumar-item {
+    background: #2ecc71;
+}
+
+.btn-sumar-item:hover {
+    background: #27ae60;
+}
+
+.btn-restar-item {
+    background: #e67e22;
+}
+
+.btn-restar-item:hover {
+    background: #d35400;
+}
+
 /* Descuento Section */
 .descuento-section {
     background: #f8f9fa;

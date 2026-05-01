@@ -881,7 +881,7 @@ async def aplicar_descuento_puntos(request: Request):
         puntos_usados = data.get("puntos_usados")
         monto_descuento = data.get("monto_descuento")
         
-        if not telefono_cliente or not puntos_usados or not monto_descuento:
+        if not telefono_cliente or puntos_usados is None or monto_descuento is None:
             raise HTTPException(status_code=400, detail="Faltan datos requeridos")
         
         conn = sqlite3.connect("abarrotes.db")
@@ -907,7 +907,7 @@ async def aplicar_descuento_puntos(request: Request):
         conn.close()
         
         if ctrl_ventas.venta_actual:
-            ctrl_ventas.venta_actual['descuento'] = (ctrl_ventas.venta_actual.get('descuento', 0) + monto_descuento)
+            ctrl_ventas.venta_actual['descuento'] = ctrl_ventas.venta_actual.get('descuento', 0) + monto_descuento
             ctrl_ventas.venta_actual['total'] = ctrl_ventas.venta_actual['subtotal'] + ctrl_ventas.venta_actual['impuestos'] - ctrl_ventas.venta_actual['descuento']
         
         return {

@@ -915,6 +915,222 @@ function cerrarModalCantidad() {
     productoPendiente = null;
 }
 
+async function mostrarModalCanjePuntos() {
+    const textoRolActual = document.getElementById('rolActual').textContent || document.getElementById('rolActual').innerText || '';
+    const esCliente = textoRolActual.includes('Cliente');
+
+    let telefonoCliente = null;
+    let puntosCliente = 0;
+
+    if (esCliente) {
+        const partes = textoRolActual.replace('Cliente ', '').trim().split(' ');
+        const clienteNombre = partes.join(' ');
+        const responseClientes = await fetch('/api/clientes');
+        const clientes = await responseClientes.json();
+        const clienteEncontrado = clientes.find(c => {
+            const nombreCompleto = (c.nombre + ' ' + (c.apellido || '')).trim();
+            return nombreCompleto.toLowerCase() === clienteNombre.toLowerCase();
+        });
+        if (clienteEncontrado) {
+            telefonoCliente = clienteEncontrado.telefono;
+            puntosCliente = clienteEncontrado.puntos;
+        }
+    } else {
+        const clienteSelect = document.getElementById('clienteSelectEmpleado');
+        if (clienteSelect && clienteSelect.value) {
+            telefonoCliente = clienteSelect.value;
+            const responseClientes = await fetch('/api/clientes');
+            const clientes = await responseClientes.json();
+            const clienteEncontrado = clientes.find(c => c.telefono === telefonoCliente);
+            if (clienteEncontrado) {
+                puntosCliente = clienteEncontrado.puntos;
+            }
+        }
+    }
+
+    if (!telefonoCliente) {
+        mostrarNotificacion('Debes iniciar sesion como cliente o seleccionar un cliente para usar sus puntos', 'error');
+        return;
+    }
+
+    if (puntosCliente <= 0) {
+        mostrarNotificacion('No tienes puntos disponibles', 'error');
+        return;
+    }
+
+    const totalActual = ventaActual ? ventaActual.total : 0;
+
+    document.getElementById('puntosDisponiblesModal').textContent = puntosCliente;
+    document.getElementById('totalCompraModal').textContent = '$' + totalActual.toFixed(2);
+    document.getElementById('puntosUsarInput').value = '';
+    document.getElementById('puntosUsarInput').max = Math.min(puntosCliente, totalActual);
+    document.getElementById('descuentoMostrado').innerHTML = '';
+    document.getElementById('errorPuntosModal').style.display = 'none';
+
+    document.getElementById('puntosUsarInput').oninput = function () {
+        const puntos = parseInt(this.value) || 0;
+        const maxPuntos = parseInt(this.max) || 0;
+        if (puntos > maxPuntos) {
+            document.getElementById('errorPuntosModal').innerHTML = 'No puedes usar mas puntos de los disponibles o del total de la compra';
+            document.getElementById('errorPuntosModal').style.display = 'block';
+            document.getElementById('descuentoMostrado').innerHTML = '';
+        } else if (puntos > 0) {
+            document.getElementById('errorPuntosModal').style.display = 'none';
+            document.getElementById('descuentoMostrado').innerHTML = 'Descuento a aplicar: $' + puntos.toFixed(2);
+        } else {
+            document.getElementById('errorPuntosModal').style.display = 'none';
+            document.getElementById('descuentoMostrado').innerHTML = '';
+        }
+    };
+
+    document.getElementById('modalCanjePuntos').style.display = 'block';
+}
+
+function cerrarModalCanjePuntos() {
+    document.getElementById('modalCanjePuntos').style.display = 'none';
+    document.getElementById('puntosUsarInput').value = '';
+    document.getElementById('errorPuntosModal').style.display = 'none';
+}
+
+async function confirmarCanjePuntos() {
+    console.log('=== INICIO confirmarCanjePuntos ===');
+    console.log('ventaActual:', ventaActual);
+
+    if (!ventaActual || !ventaActual.carrito || ventaActual.carrito.length === 0) {
+        mostrarNotificacion('No hay productos en el carrito', 'error');
+        cerrarModalCanjePuntos();
+        return;
+    }
+
+    const puntosUsar = parseInt(document.getElementById('puntosUsarInput').value);
+    const maxPuntos = parseInt(document.getElementById('puntosUsarInput').max);
+
+    console.log('puntosUsar:', puntosUsar);
+    console.log('maxPuntos:', maxPuntos);
+
+    if (!puntosUsar || isNaN(puntosUsar) || puntosUsar <= 0) {
+        mostrarNotificacion('Ingresa una cantidad valida de puntos', 'error');
+        return;
+    }
+
+    if (puntosUsar > maxPuntos) {
+        mostrarNotificacion('No puedes usar mas puntos de los disponibles o del total de la compra', 'error');
+        return;
+    }
+
+    const textoRolActual = document.getElementById('rolActual').textContent || document.getElementById('rolActual').innerText || '';
+    const esCliente = textoRolActual.includes('Cliente');
+
+    console.log('esCliente:', esCliente);
+
+    let telefonoCliente = null;
+    let puntosCliente = 0;
+
+    if (esCliente) {
+        const partes = textoRolActual.replace('Cliente ', '').trim().split(' ');
+        const clienteNombre = partes.join(' ');
+        console.log('clienteNombre:', clienteNombre);
+
+        const responseClientes = await fetch('/api/clientes');
+        const clientes = await responseClientes.json();
+        console.log('clientes:', clientes);
+
+        const clienteEncontrado = clientes.find(c => {
+            const nombreCompleto = (c.nombre + ' ' + (c.apellido || '')).trim();
+            console.log('Comparando:', nombreCompleto, 'con', clienteNombre);
+            return nombreCompleto.toLowerCase() === clienteNombre.toLowerCase();
+        });
+
+        console.log('clienteEncontrado:', clienteEncontrado);
+
+        if (clienteEncontrado) {
+            telefonoCliente = clienteEncontrado.telefono;
+            puntosCliente = clienteEncontrado.puntos;
+        }
+    } else {
+        const clienteSelect = document.getElementById('clienteSelectEmpleado');
+        console.log('clienteSelect:', clienteSelect);
+        console.log('clienteSelect.value:', clienteSelect ? clienteSelect.value : 'null');
+
+        if (clienteSelect && clienteSelect.value) {
+            telefonoCliente = clienteSelect.value;
+            const responseClientes = await fetch('/api/clientes');
+            const clientes = await responseClientes.json();
+            const clienteEncontrado = clientes.find(c => c.telefono === telefonoCliente);
+            if (clienteEncontrado) {
+                puntosCliente = clienteEncontrado.puntos;
+            }
+        }
+    }
+
+    console.log('telefonoCliente final:', telefonoCliente);
+    console.log('puntosCliente final:', puntosCliente);
+
+    if (!telefonoCliente) {
+        mostrarNotificacion('No se encontro el cliente para aplicar el descuento', 'error');
+        cerrarModalCanjePuntos();
+        return;
+    }
+
+    if (puntosUsar > puntosCliente) {
+        mostrarNotificacion(`Puntos insuficientes. Tienes ${puntosCliente} puntos`, 'error');
+        cerrarModalCanjePuntos();
+        return;
+    }
+
+    const descuentoAplicar = puntosUsar;
+
+    const bodyEnvio = {
+        telefono_cliente: telefonoCliente,
+        puntos_usados: puntosUsar,
+        monto_descuento: descuentoAplicar
+    };
+
+    console.log('Enviando al servidor:', JSON.stringify(bodyEnvio));
+
+    try {
+        const response = await fetch('/api/ventas/descuento-puntos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(bodyEnvio)
+        });
+
+        console.log('Response status:', response.status);
+
+        const result = await response.json();
+        console.log('Respuesta del servidor:', result);
+
+        if (response.ok && result.success) {
+            if (ventaActual) {
+                ventaActual.descuento = (ventaActual.descuento || 0) + descuentoAplicar;
+                ventaActual.total = ventaActual.subtotal + ventaActual.impuestos - ventaActual.descuento;
+                actualizarCarrito();
+            }
+            mostrarNotificacion(`Descuento aplicado: $${descuentoAplicar.toFixed(2)} usando ${puntosUsar} puntos`, 'success');
+            await cargarClientes();
+
+            const puntosSpan = document.getElementById('cantidadPuntosCliente');
+            if (puntosSpan) {
+                puntosSpan.textContent = puntosCliente - puntosUsar;
+            }
+
+            cerrarModalCanjePuntos();
+        } else {
+            const mensajeError = result.error || result.detail || 'Error al aplicar descuento por puntos';
+            console.error('Error del servidor:', mensajeError);
+            mostrarNotificacion(mensajeError, 'error');
+            cerrarModalCanjePuntos();
+        }
+    } catch (error) {
+        console.error('Error en fetch:', error);
+        console.error('Error details:', error.message);
+        mostrarNotificacion('Error de conexion: ' + error.message, 'error');
+        cerrarModalCanjePuntos();
+    }
+
+    console.log('=== FIN confirmarCanjePuntos ===');
+}
+
 async function confirmarCantidad() {
     const cantidad = parseFloat(document.getElementById('inputCantidad').value);
 

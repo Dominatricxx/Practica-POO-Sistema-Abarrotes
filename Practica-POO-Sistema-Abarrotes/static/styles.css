@@ -8,6 +8,7 @@ body {
     font-family: 'Roboto', sans-serif;
     background: linear-gradient(135deg, #667eea 0%, #f5f5f5 100%);
     min-height: 100vh;
+    height: 100%;
     padding: 20px;
 }
 
@@ -451,17 +452,21 @@ header {
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
     animation: fadeIn 0.3s ease;
+    align-items: center;
+    justify-content: center;
 }
 
 .modal-content {
     background-color: white;
-    margin: 5% auto;
+    margin: 0 auto;
     padding: 30px;
     border-radius: 15px;
     width: 90%;
     max-width: 500px;
     position: relative;
     animation: slideIn 0.3s ease;
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
 @keyframes slideIn {
@@ -1105,6 +1110,20 @@ header {
 
 .btn-verificar:hover {
     background: #3182ce;
+}
+
+.puntos-input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 1em;
+    transition: border-color 0.3s ease;
+}
+
+.puntos-input:focus {
+    outline: none;
+    border-color: #ed8936;
 }
 
 @media (max-width: 1024px) {

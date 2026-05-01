@@ -303,7 +303,7 @@
                             <button onclick="nuevaVenta()" class="btn-nueva">
                                 <i class="fas fa-plus-circle"></i> Nueva Venta
                             </button>
-                            <button onclick="aplicarDescuentoPuntos()" class="btn-puntos"
+                            <button onclick="mostrarModalCanjePuntos()" class="btn-puntos"
                                 style="background: #ed8936; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1em; transition: transform 0.3s ease, box-shadow 0.3s ease; padding: 12px;">
                                 <i class="fas fa-star"></i> Usar Puntos
                             </button>
@@ -454,6 +454,43 @@
                 <div style="display: flex; gap: 10px; margin-top: 20px;">
                     <button onclick="confirmarCompra()" class="btn-verificar" style="flex: 1;">Confirmar</button>
                     <button onclick="cerrarModalConfirmarCompra()" class="btn-cerrar"
+                        style="flex: 1; background: #a0aec0;">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="modalCanjePuntos" class="modal">
+        <div class="modal-content" style="max-width: 450px;">
+            <span class="close" onclick="cerrarModalCanjePuntos()">&times;</span>
+            <div class="modal-header">
+                <h2><i class="fas fa-star"></i> Canjear Puntos</h2>
+            </div>
+            <div class="modal-body">
+                <div id="infoPuntosCliente"
+                    style="background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: center;">
+                    <p style="margin-bottom: 5px;"><strong>Tus puntos disponibles:</strong></p>
+                    <p id="puntosDisponiblesModal" style="font-size: 2em; font-weight: bold; color: #ed8936;">0</p>
+                    <p style="font-size: 0.9em; color: #666;">1 punto = $1 de descuento</p>
+                </div>
+                <div id="infoTotalCompra"
+                    style="background: #f0f0f0; padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+                    <p style="margin-bottom: 5px;"><strong>Total de compra actual:</strong></p>
+                    <p id="totalCompraModal" style="font-size: 1.5em; font-weight: bold; color: #667eea;">$0.00</p>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold;">Puntos a usar:</label>
+                    <input type="number" id="puntosUsarInput" class="puntos-input"
+                        placeholder="Ingresa la cantidad de puntos" min="0" step="1"
+                        style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1em;">
+                    <p id="descuentoMostrado"
+                        style="margin-top: 10px; font-size: 0.9em; color: #48bb78; text-align: right;"></p>
+                </div>
+                <div id="errorPuntosModal"
+                    style="color: #e53e3e; margin-bottom: 15px; text-align: center; display: none;"></div>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="confirmarCanjePuntos()" class="btn-verificar" style="flex: 1;">Confirmar
+                        Canje</button>
+                    <button onclick="cerrarModalCanjePuntos()" class="btn-cerrar"
                         style="flex: 1; background: #a0aec0;">Cancelar</button>
                 </div>
             </div>

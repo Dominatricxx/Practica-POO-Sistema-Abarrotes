@@ -623,6 +623,16 @@ class VentasController:
             venta_id = self.db.guardar_venta(self.venta_actual, self.venta_actual['carrito'], puntos_ganados)
         except Exception as e:
             return {'error': f'Error al guardar en base de datos: {str(e)}'}
+
+                    
+        for detalle in self.venta_actual['carrito']:
+            codigo = detalle['producto']['codigoBarra']
+            cantidad_vendida = detalle['cantidad']
+            conn = sqlite3.connect(self.db.db_name)
+            cursor = conn.cursor()
+            cursor.execute('UPDATE productos SET stock = stock - ? WHERE codigoBarra = ?', (cantidad_vendida, codigo))
+            conn.commit()
+            conn.close()
         
         ticket = self._generar_ticket(puntos_ganados)
         
@@ -1107,7 +1117,7 @@ async def reporte_ventas_detalle(periodo: str = "todas"):
         JOIN ventas v ON vd.venta_id = v.id
         JOIN productos p ON vd.codigoBarra = p.codigoBarra
         WHERE v.fecha >= ?
-        GROUP BY vd.codigoBarra
+        GROUP BY vd.codigoBarra, p.nombre, p.stock
         ORDER BY total_vendido DESC
     ''', (fecha_inicio,))
     productos_vendidos = cursor.fetchall()

@@ -3323,6 +3323,8 @@ async function cargarReporteEmpleado(periodo) {
 
         contenido.innerHTML = html;
 
+        await cargarInventarioEmpleado();
+
         const botones = document.querySelectorAll('.btn-periodo');
         botones.forEach(btn => {
             btn.style.background = '#667eea';
